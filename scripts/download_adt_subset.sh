@@ -48,10 +48,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 [[ -n "$manifest" && -n "$sequence" && -n "$types" && -n "$out" ]] || usage
-require_env EGOPERSIST_DATA_ROOT
-require_env EGOPERSIST_ADT_LICENCE_APPROVED
-if [[ "$EGOPERSIST_ADT_LICENCE_APPROVED" != "yes" ]]; then
-    cluster_fail "ADT licence approval is necessary. Set EGOPERSIST_ADT_LICENCE_APPROVED=yes."
+require_env WISE_EGOMAP_DATA_ROOT
+require_env WISE_EGOMAP_ADT_LICENCE_APPROVED
+if [[ "$WISE_EGOMAP_ADT_LICENCE_APPROVED" != "yes" ]]; then
+    cluster_fail "ADT licence approval is necessary. Set WISE_EGOMAP_ADT_LICENCE_APPROVED=yes."
 fi
 if [[ ! "$sequence" =~ ^[A-Za-z0-9_-]+$ ]]; then
     cluster_fail "Sequence ID has unsafe characters."
@@ -64,11 +64,11 @@ require_command curl
 require_file "$manifest" "ADT manifest"
 manifest_real="$(canonical_path "$manifest" "ADT manifest")"
 out="$(canonical_path "$out" "output directory")"
-data_real="$(canonical_path "$EGOPERSIST_DATA_ROOT" "EGOPERSIST_DATA_ROOT")"
+data_real="$(canonical_path "$WISE_EGOMAP_DATA_ROOT" "WISE_EGOMAP_DATA_ROOT")"
 case "$manifest_real" in
     "${data_real}/"*) ;;
     *)
-        cluster_fail "The ADT manifest must be under EGOPERSIST_DATA_ROOT."
+        cluster_fail "The ADT manifest must be under WISE_EGOMAP_DATA_ROOT."
         ;;
 esac
 case "$manifest_real" in

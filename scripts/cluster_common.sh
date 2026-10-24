@@ -128,14 +128,14 @@ project_to_container() {
     local path="$1"
     local root_real
     local path_real
-    root_real="$(canonical_path "$EGOPERSIST_PROJECT_ROOT" "EGOPERSIST_PROJECT_ROOT")"
+    root_real="$(canonical_path "$WISE_EGOMAP_PROJECT_ROOT" "WISE_EGOMAP_PROJECT_ROOT")"
     path_real="$(canonical_path "$path" "project path")"
     case "$path_real" in
         "${root_real}/"*)
             printf '/workspace/%s' "${path_real#"${root_real}/"}"
             ;;
         *)
-            cluster_fail "Path is not under EGOPERSIST_PROJECT_ROOT: ${path}"
+            cluster_fail "Path is not under WISE_EGOMAP_PROJECT_ROOT: ${path}"
             ;;
     esac
 }
@@ -144,14 +144,14 @@ data_to_container() {
     local path="$1"
     local root_real
     local path_real
-    root_real="$(canonical_path "$EGOPERSIST_DATA_ROOT" "EGOPERSIST_DATA_ROOT")"
+    root_real="$(canonical_path "$WISE_EGOMAP_DATA_ROOT" "WISE_EGOMAP_DATA_ROOT")"
     path_real="$(canonical_path "$path" "data path")"
     case "$path_real" in
         "${root_real}/"*)
             printf '/data/%s' "${path_real#"${root_real}/"}"
             ;;
         *)
-            cluster_fail "Path is not under EGOPERSIST_DATA_ROOT: ${path}"
+            cluster_fail "Path is not under WISE_EGOMAP_DATA_ROOT: ${path}"
             ;;
     esac
 }
@@ -162,9 +162,9 @@ to_container_path() {
     local data_real
     local run_real
     local path_real
-    project_real="$(canonical_path "$EGOPERSIST_PROJECT_ROOT" "EGOPERSIST_PROJECT_ROOT")"
-    data_real="$(canonical_path "$EGOPERSIST_DATA_ROOT" "EGOPERSIST_DATA_ROOT")"
-    run_real="$(canonical_path "$EGOPERSIST_RUN_ROOT" "EGOPERSIST_RUN_ROOT")"
+    project_real="$(canonical_path "$WISE_EGOMAP_PROJECT_ROOT" "WISE_EGOMAP_PROJECT_ROOT")"
+    data_real="$(canonical_path "$WISE_EGOMAP_DATA_ROOT" "WISE_EGOMAP_DATA_ROOT")"
+    run_real="$(canonical_path "$WISE_EGOMAP_RUN_ROOT" "WISE_EGOMAP_RUN_ROOT")"
     path_real="$(canonical_path "$path" "bind path")"
     case "$path_real" in
         "${project_real}/"*)
@@ -198,6 +198,6 @@ data_file_to_container() {
 
 run_path_to_container() {
     local path="$1"
-    require_writable_directory "$EGOPERSIST_RUN_ROOT" "EGOPERSIST_RUN_ROOT"
+    require_writable_directory "$WISE_EGOMAP_RUN_ROOT" "WISE_EGOMAP_RUN_ROOT"
     to_container_path "$path"
 }

@@ -6,7 +6,7 @@ external data. It does not show ADT results.
 ## Run
 
 ```bash
-PYTHONPATH=src python3.12 -m egopersist.cli.main generate \
+PYTHONPATH=src python3.12 -m wise_egomap.cli.main generate \
   --output demo-output
 ```
 
@@ -16,13 +16,13 @@ uses no network requests and no external assets.
 Ask the mug query:
 
 ```bash
-PYTHONPATH=src python3.12 -m egopersist.cli.main query \
+PYTHONPATH=src python3.12 -m wise_egomap.cli.main query \
   --scenario durable_mug_move --time 9.0
 ```
 
 ## Replay Schema
 
-The schema identifier is `egopersist.demo.replay/1`.
+The schema identifier is `wise_egomap.demo.replay/1`.
 
 Each scenario has:
 
@@ -44,13 +44,13 @@ has a JSON round-trip and stable key order.
 
 ## Scenarios
 
-| Scenario | Cause | Instant update | EgoPersist |
+| Scenario | Cause | Instant update | WISE-EgoMap |
 |---|---|---|---|
 | Passing person | Human candidate | Adds the person | Rejects the candidate |
 | Durable mug move | New pose stays 5 s | Commits at once | Defers, then commits at 7.5 s |
 | Occlusion | Mug mask absent | Removes the mug | Keeps the mug and defers |
 
-The replay duration is 18.5 s in total. The viewer shows the EgoPersist map,
+The replay duration is 18.5 s in total. The viewer shows the WISE-EgoMap map,
 the instant map, the map timeline, the decision reasons, the evidence bars,
 and the mug query.
 
@@ -69,21 +69,21 @@ current keyframe observations.
 Render a small local GIF:
 
 ```bash
-PYTHONPATH=src python3.12 -m egopersist.cli.main render \
+PYTHONPATH=src python3.12 -m wise_egomap.cli.main render \
   --output demo-output/demo.gif --fps 2
 ```
 
 Render one PNG frame:
 
 ```bash
-PYTHONPATH=src python3.12 -m egopersist.cli.main render \
+PYTHONPATH=src python3.12 -m wise_egomap.cli.main render \
   --output demo-output/occlusion.png --scenario occlusion --frame 6
 ```
 
 Render an MP4 on the cluster:
 
 ```bash
-PYTHONPATH=src python3.12 -m egopersist.cli.main render \
+PYTHONPATH=src python3.12 -m wise_egomap.cli.main render \
   --output demo-output/demo.mp4 --fps 2
 ```
 

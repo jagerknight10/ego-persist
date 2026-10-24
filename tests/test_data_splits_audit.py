@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from egopersist.contracts import EventLabel, EventType, LabelClass
-from egopersist.data import (
+from wise_egomap.contracts import EventLabel, EventType, LabelClass
+from wise_egomap.data import (
     SplitSpec,
     build_audit,
     load_splits,

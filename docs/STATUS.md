@@ -1,10 +1,10 @@
-# EgoPersist — Status and Action Plan
+# WISE-EgoMap — Status and Action Plan
 
 Date: 2026-10-24. Branch: `main`. Owner: lead agent.
 
 ## 1. Task
 
-EgoPersist adds a causal map-maintenance layer to egocentric 4D mapping.
+WISE-EgoMap adds a causal map-maintenance layer to egocentric 4D mapping.
 
 - Input: per-frame 2D detections, camera poses, calibration, and (on the
   cluster) depth and RGB.
@@ -26,7 +26,7 @@ Verified working: downloaded 5 small files of sequence
 `Apartment_release_recognition_seq133_M1292` (~30 MB), SHA-1 matches
 manifest.
 
-Files per sequence that EgoPersist uses:
+Files per sequence that WISE-EgoMap uses:
 
 | Asset | Size/seq | Where | Used for |
 |---|---|---|---|

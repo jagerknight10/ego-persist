@@ -8,5 +8,5 @@ use_gt_pose: true
 scene_split_policy: sequence_and_activity_instance
 min_valid_objects_per_sequence: 3
 fixture_path: tests/fixtures/adt_tiny
-raw_root: ${oc.env:EGOPERSIST_DATA_ROOT,/data/adt}
+raw_root: ${oc.env:WISE_EGOMAP_DATA_ROOT,/data/adt}
 split_file: data/adt_splits_v1.json

@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from egopersist.geometry.obb import (
+from wise_egomap.geometry.obb import (
     OBB,
     centroid_distance_m,
     intersection_volume_m3,

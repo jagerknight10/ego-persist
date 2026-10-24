@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from egopersist.contracts import Observation
-from egopersist.data import build_observations, keyframe_times
+from wise_egomap.contracts import Observation
+from wise_egomap.data import build_observations, keyframe_times
 
 SEQ133 = Path(__file__).resolve().parents[1] / "data" / "raw" / "adt" / "seq133"
 
@@ -32,7 +32,7 @@ def test_keyframe_times_reject_bad_input() -> None:
     not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present"
 )
 def test_observations_static_and_dynamic_tracks() -> None:
-    from egopersist.data import load_adt_sequence
+    from wise_egomap.data import load_adt_sequence
 
     seq = load_adt_sequence(SEQ133)
     observations = build_observations(seq, 2.0)
@@ -57,7 +57,7 @@ def test_observations_static_and_dynamic_tracks() -> None:
 )
 def test_observations_causal_pose_lag() -> None:
     """Pose at a keyframe never comes from a later frame."""
-    from egopersist.data import load_adt_sequence
+    from wise_egomap.data import load_adt_sequence
 
     seq = load_adt_sequence(SEQ133)
     observations = build_observations(seq, 2.0)

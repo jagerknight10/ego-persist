@@ -7,23 +7,23 @@ source "${script_dir}/cluster_common.sh"
 
 bash "${script_dir}/check_cluster_env.sh"
 
-image_sha256="$(sha256sum "$EGOPERSIST_IMAGE" | awk '{print $1}')"
+image_sha256="$(sha256sum "$WISE_EGOMAP_IMAGE" | awk '{print $1}')"
 printf 'Smoke image SHA-256: %s\n' "$image_sha256"
 
 # The workspace bind is read-only, so pytest must not write a cache.
 apptainer exec \
     --cleanenv --no-home \
-    --bind "${EGOPERSIST_PROJECT_ROOT}:/workspace:ro" \
-    --bind "${EGOPERSIST_DATA_ROOT}:/data:ro" \
-    --bind "${EGOPERSIST_RUN_ROOT}:/runs" \
-    --env "EGOPERSIST_PROJECT_ROOT=/workspace" \
-    --env "EGOPERSIST_DATA_ROOT=/data" \
-    --env "EGOPERSIST_RUN_ROOT=/runs" \
+    --bind "${WISE_EGOMAP_PROJECT_ROOT}:/workspace:ro" \
+    --bind "${WISE_EGOMAP_DATA_ROOT}:/data:ro" \
+    --bind "${WISE_EGOMAP_RUN_ROOT}:/runs" \
+    --env "WISE_EGOMAP_PROJECT_ROOT=/workspace" \
+    --env "WISE_EGOMAP_DATA_ROOT=/data" \
+    --env "WISE_EGOMAP_RUN_ROOT=/runs" \
     --env "PYTHONPATH=/workspace/src" \
     --nv \
-    "$EGOPERSIST_IMAGE" \
+    "$WISE_EGOMAP_IMAGE" \
     bash -c 'cd /workspace \
-        && python -c "import egopersist; print(egopersist.__version__)" \
+        && python -c "import wise_egomap; print(wise_egomap.__version__)" \
         && python -m pytest tests -q -p no:cacheprovider'
 
 printf 'Cluster smoke passed.\n'

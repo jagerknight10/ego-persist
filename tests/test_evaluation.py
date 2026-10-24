@@ -1,4 +1,4 @@
-"""CPU tests for deterministic EgoPersist evaluation."""
+"""CPU tests for deterministic WISE-EgoMap evaluation."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from pathlib import Path
 
 import pytest
 
-from egopersist.contracts import (
+from wise_egomap.contracts import (
     Decision,
     DecisionAction,
     EventLabel,
@@ -15,7 +15,7 @@ from egopersist.contracts import (
     LabelClass,
     MapUpdate,
 )
-from egopersist.evaluation import (
+from wise_egomap.evaluation import (
     EMPTY_CASE_POLICY,
     ActionEvent,
     ErrorCategory,

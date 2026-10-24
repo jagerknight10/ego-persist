@@ -4,13 +4,13 @@ import math
 
 import pytest
 
-from egopersist.geometry.projection import (
+from wise_egomap.geometry.projection import (
     backproject_world,
     camera_ray,
     project_world_to_pixel,
     ray_point_distance_m,
 )
-from egopersist.geometry.transforms import Rigid, quat_normalize, transform_point
+from wise_egomap.geometry.transforms import Rigid, quat_normalize, transform_point
 
 PIN = (1221.0, 1221.0, 960.0, 540.0)
 

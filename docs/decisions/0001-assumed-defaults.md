@@ -24,7 +24,7 @@ package within one week.
 12. The cluster has Slurm and internet access.
 13. The user runs all cluster jobs.
 14. The GitHub account is `jagerknight10`.
-15. The repository is private and named `ego-persist`.
+15. The repository is private and named `wise-egomap`.
 16. ADT is blocked until the licence is approved.
 
 ## Open Items

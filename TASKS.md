@@ -1,4 +1,4 @@
-# EgoPersist Task Board
+# WISE-EgoMap Task Board
 
 The plan is accepted. Work starts with the synthetic path.
 
@@ -69,7 +69,7 @@ ADT tasks remain blocked until the licence is approved.
 | M2 | Demo | Build scenario replay | M1, G4 | Three cases run |
 | M3 | Demo | Build 3D viewer | M2 | Map and timeline show |
 | M4 | Demo | Build query flow | M3 | Mug query returns state |
-| M5 | Demo | Build side-by-side comparison | M3 | Instant vs EgoPersist |
+| M5 | Demo | Build side-by-side comparison | M3 | Instant vs WISE-EgoMap |
 | M6 | Demo | Build video scaffold | M5 | 90-second render path |
 
 ## Phase 5: Infrastructure and Release

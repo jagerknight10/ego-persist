@@ -1,7 +1,7 @@
 """Gated Hungarian association: matching, gating, and track lifecycle."""
 
-from egopersist.association.association import TrackBank, default_gate
-from egopersist.contracts.core import Observation
+from wise_egomap.association.association import TrackBank, default_gate
+from wise_egomap.contracts.core import Observation
 
 
 def make_obs(

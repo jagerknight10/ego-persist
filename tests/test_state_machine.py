@@ -2,12 +2,12 @@
 
 import math
 
-from egopersist.contracts.core import (
+from wise_egomap.contracts.core import (
     DecisionAction,
     LabelClass,
     Observation,
 )
-from egopersist.mapping.state_machine import (
+from wise_egomap.mapping.state_machine import (
     StateMachineConfig,
     TrackStateMachine,
     TrackView,

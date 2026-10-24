@@ -1,4 +1,4 @@
-# EgoPersist One-Week Build Plan
+# WISE-EgoMap One-Week Build Plan
 
 Status: ACCEPTED. Defaults are confirmed. The build order is now:
 
@@ -64,11 +64,11 @@ Each agent uses a separate Git worktree. The lead owns shared interfaces and mer
 | Agent | Owns | Must deliver |
 |---|---|---|
 | Lead | Contracts, integration, release | Interface freeze, review, release candidate |
-| Data | `egopersist/data`, ADT scripts, splits | ADT adapter, label rules, audit report, toy fixture |
-| Geometry | `egopersist/geometry`, `association`, `mapping` | Projection, tracks, state machine, update logic |
-| Evidence | `egopersist/evidence`, baselines, training | Features, Bayes model, EvidenceGRU, calibration |
-| Evaluation | `egopersist/evaluation`, reports | Metrics, event evaluator, Pareto plots, error taxonomy |
-| Demo | `egopersist/visualization`, demo app | Replay, viewer, query flow, video scaffold |
+| Data | `wise_egomap/data`, ADT scripts, splits | ADT adapter, label rules, audit report, toy fixture |
+| Geometry | `wise_egomap/geometry`, `association`, `mapping` | Projection, tracks, state machine, update logic |
+| Evidence | `wise_egomap/evidence`, baselines, training | Features, Bayes model, EvidenceGRU, calibration |
+| Evaluation | `wise_egomap/evaluation`, reports | Metrics, event evaluator, Pareto plots, error taxonomy |
+| Demo | `wise_egomap/visualization`, demo app | Replay, viewer, query flow, video scaffold |
 | Infra | `environment`, `jobs`, CI | Container, Slurm jobs, provenance, release checks |
 
 ## 5. Shared Contracts
@@ -123,7 +123,7 @@ All contracts use typed Python dataclasses or Pydantic models. All contracts hav
 
 ## 8. Final Deliverables
 
-- Private GitHub repository named `ego-persist`.
+- Private GitHub repository named `wise-egomap`.
 - README with a 100-word abstract.
 - Architecture and map-lifecycle diagram.
 - Technical report.
@@ -144,7 +144,7 @@ All contracts use typed Python dataclasses or Pydantic models. All contracts hav
 5. Compute nodes have internet access.
 6. The user runs all cluster jobs.
 7. GitHub account: `jagerknight10`.
-8. Repository: private `ego-persist`.
+8. Repository: private `wise-egomap`.
 9. ADT licence: not approved.
 10. ADT work is blocked until the licence is approved.
 

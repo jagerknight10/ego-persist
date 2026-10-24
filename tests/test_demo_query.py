@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import pytest
 
-from egopersist.contracts import LabelClass
-from egopersist.visualization import (
+from wise_egomap.contracts import LabelClass
+from wise_egomap.visualization import (
     ReplayMapEntry,
     answer_object_query,
     build_demo_replay,

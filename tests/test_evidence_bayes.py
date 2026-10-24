@@ -4,10 +4,10 @@ from __future__ import annotations
 
 import math
 
-from egopersist.contracts import LabelClass
-from egopersist.evidence.bayes import BayesAccumulator
-from egopersist.evidence.features import TrackFeatureState
 from tests.test_evidence_features import view
+from wise_egomap.contracts import LabelClass
+from wise_egomap.evidence.bayes import BayesAccumulator
+from wise_egomap.evidence.features import TrackFeatureState
 
 
 def test_probabilities_sum_to_one() -> None:
@@ -22,7 +22,7 @@ def test_probabilities_sum_to_one() -> None:
 
 
 def test_window_is_bounded_fifo() -> None:
-    from egopersist.evidence.features import INPUT_DIM
+    from wise_egomap.evidence.features import INPUT_DIM
 
     acc = BayesAccumulator(window=2)
     for _ in range(4):

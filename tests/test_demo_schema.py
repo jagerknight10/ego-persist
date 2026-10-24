@@ -6,8 +6,8 @@ import json
 
 import pytest
 
-from egopersist.contracts import DecisionAction, LabelClass
-from egopersist.visualization import (
+from wise_egomap.contracts import DecisionAction, LabelClass
+from wise_egomap.visualization import (
     SCHEMA_VERSION,
     ReplayDocument,
     ReplaySchemaError,

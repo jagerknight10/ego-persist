@@ -1,6 +1,6 @@
-# EgoPersist
+# WISE-EgoMap
 
-EgoPersist is a causal map-maintenance layer for egocentric video.
+WISE-EgoMap is a causal map-maintenance layer for egocentric video.
 
 It decides whether a map discrepancy is transient, deferred, or a durable
 change. It does not train a new SLAM model. It sits above a frozen pose, depth,
@@ -22,8 +22,8 @@ segmentation, and appearance stack.
 ## Local Demo
 
 ```bash
-PYTHONPATH=src python3.12 -m egopersist.cli.main query
-PYTHONPATH=src python3.12 -m egopersist.cli.main generate --output demo-out
+PYTHONPATH=src python3.12 -m wise_egomap.cli.main query
+PYTHONPATH=src python3.12 -m wise_egomap.cli.main generate --output demo-out
 open demo-out/index.html
 ```
 
@@ -41,7 +41,7 @@ PYTHONPATH=src python3.12 -m pytest
 ```text
 configs/              Versioned label and experiment settings
 docs/                 Plan, protocol, cluster runbook, and agent briefs
-src/egopersist/
+src/wise_egomap/
   contracts/          Stable typed records
   data/               ADT adapter and label tools
   geometry/           Projection and 3D operations

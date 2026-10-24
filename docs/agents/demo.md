@@ -6,8 +6,8 @@ Show the decision process, not only the final map.
 
 ## Owned Paths
 
-- `src/egopersist/visualization`
-- `src/egopersist/cli`
+- `src/wise_egomap/visualization`
+- `src/wise_egomap/cli`
 - `tests/test_demo*`
 - `docs/demo.md`
 
@@ -17,7 +17,7 @@ Show the decision process, not only the final map.
 2. Build a passing-person scenario.
 3. Build a durable-move scenario.
 4. Build an occlusion scenario.
-5. Show instant update against EgoPersist.
+5. Show instant update against WISE-EgoMap.
 6. Show a map timeline.
 7. Show evidence and confidence.
 8. Build the mug query.

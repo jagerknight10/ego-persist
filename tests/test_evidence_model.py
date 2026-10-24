@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from egopersist.contracts import LabelClass
-from egopersist.evidence import baselines, calibrate
-from egopersist.evidence.features import INPUT_DIM
-from egopersist.evidence.model import (
+from wise_egomap.contracts import LabelClass
+from wise_egomap.evidence import baselines, calibrate
+from wise_egomap.evidence.features import INPUT_DIM
+from wise_egomap.evidence.model import (
     CLASS_ORDER,
     balanced_class_weights,
     class_index,
@@ -88,7 +88,7 @@ def _values(**overrides):
         "ratio_to_change_threshold": 0.2,
     }
     base.update(overrides)
-    from egopersist.evidence.features import FEATURE_NAMES
+    from wise_egomap.evidence.features import FEATURE_NAMES
 
     out = [0.0] * INPUT_DIM
     for name, value in base.items():
@@ -116,7 +116,7 @@ def test_baselines_deterministic() -> None:
 
 def test_gru_forward_and_loss_finite() -> None:
     torch = pytest.importorskip("torch")
-    from egopersist.evidence.model import build_model, evidence_loss, load_model_config
+    from wise_egomap.evidence.model import build_model, evidence_loss, load_model_config
 
     config = load_model_config(
         Path(__file__).resolve().parents[1] / "configs" / "model" / "evidence_gru.yaml"

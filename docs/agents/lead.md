@@ -8,7 +8,7 @@ Freeze contracts, integrate workstreams, and release a tested repository.
 
 - `pyproject.toml`
 - `README.md`
-- `src/egopersist/contracts`
+- `src/wise_egomap/contracts`
 - `tests/test_contracts`
 - `docs/PLAN.md`
 - `TASKS.md`

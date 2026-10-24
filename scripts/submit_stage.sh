@@ -42,25 +42,25 @@ if [[ -n "$array_tasks" && ! "$array_tasks" =~ ^[0-9]+(-[0-9]+)?(:[0-9]+)?$ ]]; 
 fi
 
 bash "${script_dir}/check_cluster_env.sh" >/dev/null
-require_env EGOPERSIST_SLURM_PARTITION
+require_env WISE_EGOMAP_SLURM_PARTITION
 require_command sbatch
 
-template="${EGOPERSIST_PROJECT_ROOT}/jobs/${stage}.sbatch"
+template="${WISE_EGOMAP_PROJECT_ROOT}/jobs/${stage}.sbatch"
 require_file "$template" "Slurm template"
-log_root="${EGOPERSIST_RUN_ROOT}/slurm"
+log_root="${WISE_EGOMAP_RUN_ROOT}/slurm"
 if [[ ! -d "$log_root" ]]; then
     mkdir -- "$log_root"
     chmod 750 "$log_root"
 fi
 
 sbatch_args=(
-    "--partition=${EGOPERSIST_SLURM_PARTITION}"
-    "--chdir=${EGOPERSIST_PROJECT_ROOT}"
+    "--partition=${WISE_EGOMAP_SLURM_PARTITION}"
+    "--chdir=${WISE_EGOMAP_PROJECT_ROOT}"
     "--output=${log_root}/${stage}_%j.out"
     "--error=${log_root}/${stage}_%j.err"
 )
-if [[ -n "${EGOPERSIST_SLURM_ACCOUNT:-}" ]]; then
-    sbatch_args+=("--account=${EGOPERSIST_SLURM_ACCOUNT}")
+if [[ -n "${WISE_EGOMAP_SLURM_ACCOUNT:-}" ]]; then
+    sbatch_args+=("--account=${WISE_EGOMAP_SLURM_ACCOUNT}")
 fi
 if [[ -n "$array_tasks" ]]; then
     sbatch_args+=("--array=${array_tasks}")

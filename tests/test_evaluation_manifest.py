@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 from pathlib import Path
 
-from egopersist.evaluation.manifest import build_run_manifest
+from wise_egomap.evaluation.manifest import build_run_manifest
 
 
 def test_manifest_fields_and_hashes(tmp_path: Path) -> None:

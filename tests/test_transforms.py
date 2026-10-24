@@ -4,7 +4,7 @@ import math
 
 import pytest
 
-from egopersist.geometry.transforms import (
+from wise_egomap.geometry.transforms import (
     Rigid,
     backproject,
     inverse_transform,

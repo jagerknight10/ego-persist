@@ -35,8 +35,8 @@ def make_repo(path: Path) -> tuple[Path, Path]:
 
 def test_sha256_file_matches_hashlib(tmp_path: Path) -> None:
     path = tmp_path / "data.bin"
-    path.write_bytes(b"egopersist")
-    assert sha256_file(path) == hashlib.sha256(b"egopersist").hexdigest()
+    path.write_bytes(b"wise_egomap")
+    assert sha256_file(path) == hashlib.sha256(b"wise_egomap").hexdigest()
 
 
 def test_manifest_hashes_inputs_and_records_slurm(tmp_path: Path) -> None:
@@ -55,7 +55,7 @@ def test_manifest_hashes_inputs_and_records_slurm(tmp_path: Path) -> None:
         data_split_path=split,
         label_config_path=label,
         seed=2,
-        container_image="/images/egopersist.sif",
+        container_image="/images/wise_egomap.sif",
         container_sha256="a" * 64,
         command=("python", "-m", "train"),
         started_at_utc=started,

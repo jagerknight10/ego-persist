@@ -6,7 +6,7 @@ from pathlib import Path
 
 import pytest
 
-from egopersist.data import load_adt_sequence
+from wise_egomap.data import load_adt_sequence
 
 SEQ133 = Path(__file__).resolve().parents[1] / "data" / "raw" / "adt" / "seq133"
 

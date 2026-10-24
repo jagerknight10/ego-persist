@@ -6,7 +6,7 @@ Convert track observations into calibrated evidence and map decisions.
 
 ## Owned Paths
 
-- `src/egopersist/evidence`
+- `src/wise_egomap/evidence`
 - `configs/model`
 - `tests/test_evidence*`
 

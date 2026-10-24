@@ -1,0 +1,88 @@
+"""Deterministic event evaluation for WISE-EgoMap."""
+
+from wise_egomap.evaluation.matching import (
+    EventMatch,
+    EventMatching,
+    expected_action,
+    match_events,
+    normalize_actions,
+)
+from wise_egomap.evaluation.metrics import (
+    CommitTimingEntry,
+    CommitTimingReport,
+    FinalPositionErrorEntry,
+    FinalPositionErrorReport,
+    SequenceMetrics,
+    UpdateUtilityEntry,
+    UpdateUtilityReport,
+    commit_timing,
+    final_position_error_m,
+    persistent_change_metrics,
+    persistent_change_metrics_by_sequence,
+    transient_false_commit_rate,
+    unknown_false_removal_rate,
+    update_utility_at_0_30_m,
+    update_utility_at_030_m,
+)
+from wise_egomap.evaluation.models import (
+    EMPTY_CASE_POLICY,
+    ActionEvent,
+    BinaryMetrics,
+    ErrorCategory,
+    PositionReference,
+    RateMetric,
+    distance_m,
+    empty_case_policy,
+)
+from wise_egomap.evaluation.pareto import ParetoPoint, pareto_plot_data
+from wise_egomap.evaluation.report import (
+    SCHEMA_VERSION,
+    evaluation_report,
+    pareto_report,
+    write_report,
+)
+from wise_egomap.evaluation.taxonomy import (
+    TaxonomyEntry,
+    TaxonomyReport,
+    classify_errors,
+)
+
+__all__ = [
+    "EMPTY_CASE_POLICY",
+    "SCHEMA_VERSION",
+    "ActionEvent",
+    "BinaryMetrics",
+    "CommitTimingEntry",
+    "CommitTimingReport",
+    "ErrorCategory",
+    "EventMatch",
+    "EventMatching",
+    "FinalPositionErrorEntry",
+    "FinalPositionErrorReport",
+    "ParetoPoint",
+    "PositionReference",
+    "RateMetric",
+    "SequenceMetrics",
+    "TaxonomyEntry",
+    "TaxonomyReport",
+    "UpdateUtilityEntry",
+    "UpdateUtilityReport",
+    "classify_errors",
+    "commit_timing",
+    "distance_m",
+    "empty_case_policy",
+    "evaluation_report",
+    "expected_action",
+    "final_position_error_m",
+    "match_events",
+    "normalize_actions",
+    "pareto_plot_data",
+    "pareto_report",
+    "persistent_change_metrics",
+    "persistent_change_metrics_by_sequence",
+    "transient_false_commit_rate",
+    "unknown_false_removal_rate",
+    "update_utility_at_0_30_m",
+    "update_utility_at_030_m",
+    "write_report",
+]

@@ -6,9 +6,9 @@ Project observations into the world frame and maintain track state.
 
 ## Owned Paths
 
-- `src/egopersist/geometry`
-- `src/egopersist/association`
-- `src/egopersist/mapping`
+- `src/wise_egomap/geometry`
+- `src/wise_egomap/association`
+- `src/wise_egomap/mapping`
 - `tests/test_geometry*`
 - `tests/test_association*`
 - `tests/test_mapping*`

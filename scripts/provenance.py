@@ -17,10 +17,10 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from egopersist.contracts import RunManifest
+from wise_egomap.contracts import RunManifest
 
 PACKAGE_NAMES = (
-    "egopersist",
+    "wise_egomap",
     "numpy",
     "scipy",
     "PyYAML",

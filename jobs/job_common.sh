@@ -7,39 +7,39 @@ prepare_job() {
     local base_run_id
     local run_id
 
-    require_env EGOPERSIST_PROJECT_ROOT
-    require_absolute_path "$EGOPERSIST_PROJECT_ROOT" "EGOPERSIST_PROJECT_ROOT"
-    require_directory "$EGOPERSIST_PROJECT_ROOT" "EGOPERSIST_PROJECT_ROOT"
-    bash "${EGOPERSIST_PROJECT_ROOT}/scripts/check_cluster_env.sh" >/dev/null
+    require_env WISE_EGOMAP_PROJECT_ROOT
+    require_absolute_path "$WISE_EGOMAP_PROJECT_ROOT" "WISE_EGOMAP_PROJECT_ROOT"
+    require_directory "$WISE_EGOMAP_PROJECT_ROOT" "WISE_EGOMAP_PROJECT_ROOT"
+    bash "${WISE_EGOMAP_PROJECT_ROOT}/scripts/check_cluster_env.sh" >/dev/null
 
-    # One experiment = one base run id. Set EGOPERSIST_RUN_ID in the
+    # One experiment = one base run id. Set WISE_EGOMAP_RUN_ID in the
     # cluster environment file. All stages except train share it.
-    require_env EGOPERSIST_RUN_ID
-    base_run_id="$EGOPERSIST_RUN_ID"
+    require_env WISE_EGOMAP_RUN_ID
+    base_run_id="$WISE_EGOMAP_RUN_ID"
     if [[ ! "$base_run_id" =~ ^[A-Za-z0-9._-]+$ ]] ||
         [[ "$base_run_id" == "." || "$base_run_id" == ".." ]]; then
-        cluster_fail "EGOPERSIST_RUN_ID has unsafe characters."
+        cluster_fail "WISE_EGOMAP_RUN_ID has unsafe characters."
     fi
-    export EGOPERSIST_BASE_RUN_ID="$base_run_id"
+    export WISE_EGOMAP_BASE_RUN_ID="$base_run_id"
 
-    export EGOPERSIST_SEED_BASE="${EGOPERSIST_SEED_BASE:-0}"
-    if [[ ! "$EGOPERSIST_SEED_BASE" =~ ^[0-9]+$ ]]; then
-        cluster_fail "EGOPERSIST_SEED_BASE must be a non-negative integer."
+    export WISE_EGOMAP_SEED_BASE="${WISE_EGOMAP_SEED_BASE:-0}"
+    if [[ ! "$WISE_EGOMAP_SEED_BASE" =~ ^[0-9]+$ ]]; then
+        cluster_fail "WISE_EGOMAP_SEED_BASE must be a non-negative integer."
     fi
     if [[ -n "${SLURM_ARRAY_TASK_ID:-}" ]]; then
-        export EGOPERSIST_SEED="$((EGOPERSIST_SEED_BASE + SLURM_ARRAY_TASK_ID))"
+        export WISE_EGOMAP_SEED="$((WISE_EGOMAP_SEED_BASE + SLURM_ARRAY_TASK_ID))"
     else
-        export EGOPERSIST_SEED="$EGOPERSIST_SEED_BASE"
+        export WISE_EGOMAP_SEED="$WISE_EGOMAP_SEED_BASE"
     fi
 
     if [[ "$stage" == "train" ]]; then
         # Each seed owns its run directory; it reads features from the
-        # base run via EGOPERSIST_BASE_RUN_ID.
-        run_id="${base_run_id}_train_seed_${EGOPERSIST_SEED}"
+        # base run via WISE_EGOMAP_BASE_RUN_ID.
+        run_id="${base_run_id}_train_seed_${WISE_EGOMAP_SEED}"
     elif [[ "$stage" == "eval" ]]; then
         # Eval reads shared data from the base run and writes to its own
         # directory so model and Bayes variants never collide.
-        if [[ -n "${EGOPERSIST_MODEL_RUN_ID:-}" ]]; then
+        if [[ -n "${WISE_EGOMAP_MODEL_RUN_ID:-}" ]]; then
             run_id="${base_run_id}_eval_model"
         else
             run_id="${base_run_id}_eval_bayes"
@@ -47,9 +47,9 @@ prepare_job() {
     else
         run_id="$base_run_id"
     fi
-    export EGOPERSIST_RUN_ID="$run_id"
+    export WISE_EGOMAP_RUN_ID="$run_id"
 
-    export EGOPERSIST_USE_GPU="$gpu_required"
+    export WISE_EGOMAP_USE_GPU="$gpu_required"
 
     if [[ "$gpu_required" == "1" && -z "${CUDA_VISIBLE_DEVICES:-}" ]]; then
         cluster_fail "GPU is necessary, but CUDA_VISIBLE_DEVICES is empty."
@@ -68,6 +68,6 @@ run_module_stage() {
     local stage_script
     stage_script="exec python -m \"\$${module}\" --stage \"${stage}\""
     srun --ntasks=1 --cpus-per-task="${SLURM_CPUS_PER_TASK:-1}" \
-        bash "${EGOPERSIST_PROJECT_ROOT}/scripts/run_stage.sh" \
+        bash "${WISE_EGOMAP_PROJECT_ROOT}/scripts/run_stage.sh" \
         "$stage" -- bash -c "$stage_script"
 }

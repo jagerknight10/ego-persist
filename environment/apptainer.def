@@ -2,16 +2,16 @@ Bootstrap: docker
 From: python:3.11.14-slim-bookworm
 
 %help
-    EgoPersist runtime container.
+    WISE-EgoMap runtime container.
     Build only from a clean checkout with a committed uv.lock file.
 
 %files
-    pyproject.toml /opt/egopersist/pyproject.toml
-    uv.lock /opt/egopersist/uv.lock
-    src /opt/egopersist/src
-    configs /opt/egopersist/configs
-    tests /opt/egopersist/tests
-    environment/uv-version.txt /opt/egopersist/environment/uv-version.txt
+    pyproject.toml /opt/wise-egomap/pyproject.toml
+    uv.lock /opt/wise-egomap/uv.lock
+    src /opt/wise-egomap/src
+    configs /opt/wise-egomap/configs
+    tests /opt/wise-egomap/tests
+    environment/uv-version.txt /opt/wise-egomap/environment/uv-version.txt
 
 %post
     #!/bin/bash
@@ -20,25 +20,25 @@ From: python:3.11.14-slim-bookworm
     apt-get update
     apt-get install --yes --no-install-recommends ca-certificates git libgomp1
     rm -rf /var/lib/apt/lists/*
-    cd /opt/egopersist
+    cd /opt/wise-egomap
     uv_version="$(tr -d '[:space:]' < environment/uv-version.txt)"
     python -m pip install --no-cache-dir "uv==${uv_version}"
     uv sync --frozen --extra train --extra demo --extra dev
-    ./.venv/bin/python -c "import egopersist; import numpy; import yaml"
+    ./.venv/bin/python -c "import wise_egomap; import numpy; import yaml"
     umask 022
-    chmod -R a+rX /opt/egopersist
+    chmod -R a+rX /opt/wise-egomap
     rm -rf /root/.cache/uv
 
 %environment
-    export PATH=/opt/egopersist/.venv/bin:/usr/local/bin:/usr/bin:/bin
-    export PYTHONPATH=/opt/egopersist/src
+    export PATH=/opt/wise-egomap/.venv/bin:/usr/local/bin:/usr/bin:/bin
+    export PYTHONPATH=/opt/wise-egomap/src
     export PYTHONDONTWRITEBYTECODE=1
 
 %runscript
-    exec egopersist "$@"
+    exec wise_egomap "$@"
 
 %test
     #!/bin/bash
     set -euo pipefail
-    cd /opt/egopersist
+    cd /opt/wise-egomap
     python -m pytest tests -q

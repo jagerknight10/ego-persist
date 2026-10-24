@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import math
 
-from egopersist.contracts import Observation, TrackObservation
-from egopersist.evidence.features import (
+from wise_egomap.contracts import Observation, TrackObservation
+from wise_egomap.evidence.features import (
     FEATURE_NAMES,
     INPUT_DIM,
     TrackFeatureState,

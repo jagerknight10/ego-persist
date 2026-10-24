@@ -6,7 +6,7 @@ Measure map-maintenance quality at event level and frame level.
 
 ## Owned Paths
 
-- `src/egopersist/evaluation`
+- `src/wise_egomap/evaluation`
 - `tests/test_evaluation*`
 
 ## Tasks

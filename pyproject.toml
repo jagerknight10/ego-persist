@@ -3,13 +3,13 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "egopersist"
+name = "wise_egomap"
 version = "0.1.0"
 description = "Causal map maintenance for egocentric 4D mapping"
 readme = "README.md"
 requires-python = ">=3.11,<3.13"
 license = { text = "MIT" }
-authors = [{ name = "EgoPersist contributors" }]
+authors = [{ name = "WISE-EgoMap contributors" }]
 dependencies = [
   "numpy>=2.0,<3",
   "scipy>=1.11,<2",
@@ -31,10 +31,10 @@ dev = [
 ]
 
 [project.scripts]
-egopersist = "egopersist.cli.main:main"
+wise_egomap = "wise_egomap.cli.main:main"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/egopersist"]
+packages = ["src/wise_egomap"]
 
 [tool.pytest.ini_options]
 addopts = "-ra --strict-markers"

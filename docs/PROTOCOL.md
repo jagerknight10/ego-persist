@@ -1,4 +1,4 @@
-# EgoPersist Protocol v1
+# WISE-EgoMap Protocol v1
 
 Status: Draft. Freeze this protocol after the ADT sample audit.
 

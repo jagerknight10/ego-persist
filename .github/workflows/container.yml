@@ -26,9 +26,9 @@ jobs:
 
       - name: Build container
         run: |
-          export EGOPERSIST_IMAGE="${RUNNER_TEMP}/egopersist.sif"
+          export WISE_EGOMAP_IMAGE="${RUNNER_TEMP}/wise-egomap.sif"
           bash scripts/build_container.sh
 
       - name: Test container
         run: |
-          apptainer test "${RUNNER_TEMP}/egopersist.sif"
+          apptainer test "${RUNNER_TEMP}/wise-egomap.sif"

@@ -6,7 +6,7 @@ from datetime import UTC, datetime
 
 import pytest
 
-from egopersist.contracts import (
+from wise_egomap.contracts import (
     Decision,
     DecisionAction,
     EventLabel,

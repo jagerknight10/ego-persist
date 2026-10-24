@@ -6,10 +6,10 @@ from pathlib import Path
 
 import pytest
 
-from egopersist.cli.main import main
-from egopersist.visualization import build_demo_replay
-from egopersist.visualization.video import write_frame_png
-from egopersist.visualization.viewer import (
+from wise_egomap.cli.main import main
+from wise_egomap.visualization import build_demo_replay
+from wise_egomap.visualization.video import write_frame_png
+from wise_egomap.visualization.viewer import (
     render_replay_html,
     write_replay_html,
     write_replay_json,

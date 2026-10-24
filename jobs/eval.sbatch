@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-#SBATCH --job-name=egopersist-eval
+#SBATCH --job-name=wise_egomap-eval
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
@@ -16,11 +16,11 @@ require_env() {
         exit 1
     fi
 }
-require_env EGOPERSIST_PROJECT_ROOT
+require_env WISE_EGOMAP_PROJECT_ROOT
 # shellcheck source=scripts/cluster_common.sh
-source "${EGOPERSIST_PROJECT_ROOT}/scripts/cluster_common.sh"
+source "${WISE_EGOMAP_PROJECT_ROOT}/scripts/cluster_common.sh"
 # shellcheck source=jobs/job_common.sh
-source "${EGOPERSIST_PROJECT_ROOT}/jobs/job_common.sh"
+source "${WISE_EGOMAP_PROJECT_ROOT}/jobs/job_common.sh"
 
 prepare_job eval 1
-run_module_stage eval EGOPERSIST_EVAL_MODULE
+run_module_stage eval WISE_EGOMAP_EVAL_MODULE

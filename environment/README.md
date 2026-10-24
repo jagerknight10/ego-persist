@@ -19,7 +19,7 @@ image digest. A digest gives an exact base image.
 as the cluster login node.
 
 ```bash
-cd "$EGOPERSIST_PROJECT_ROOT"
+cd "$WISE_EGOMAP_PROJECT_ROOT"
 bash scripts/lock_environment.sh
 git add uv.lock
 ```
@@ -37,15 +37,15 @@ not edit the lock file by hand.
 Set these paths before the build:
 
 ```bash
-export EGOPERSIST_PROJECT_ROOT=<ABSOLUTE_REPO_PATH>
-export EGOPERSIST_IMAGE=<ABSOLUTE_SIF_PATH>
+export WISE_EGOMAP_PROJECT_ROOT=<ABSOLUTE_REPO_PATH>
+export WISE_EGOMAP_IMAGE=<ABSOLUTE_SIF_PATH>
 ```
 
 Build on the cluster:
 
 ```bash
-cd "$EGOPERSIST_PROJECT_ROOT"
-apptainer build "$EGOPERSIST_IMAGE" environment/apptainer.def
+cd "$WISE_EGOMAP_PROJECT_ROOT"
+apptainer build "$WISE_EGOMAP_IMAGE" environment/apptainer.def
 ```
 
 The recipe copies `uv.lock` into the image. A missing lock file stops the
@@ -54,7 +54,7 @@ build.
 ## Test the container
 
 ```bash
-apptainer test "$EGOPERSIST_IMAGE"
+apptainer test "$WISE_EGOMAP_IMAGE"
 ```
 
 The test runs the repository test suite in the image.

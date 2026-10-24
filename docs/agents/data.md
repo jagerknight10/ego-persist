@@ -6,7 +6,7 @@ Make ADT data readable, auditable, and labelable without copying data.
 
 ## Owned Paths
 
-- `src/egopersist/data`
+- `src/wise_egomap/data`
 - `configs/data`
 - `configs/labels_v1.yaml`
 - `tests/test_data*`

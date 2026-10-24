@@ -31,8 +31,8 @@ def test_download_wrapper_requires_licence(tmp_path: Path) -> None:
     output.mkdir()
     environment = {
         **os.environ,
-        "EGOPERSIST_DATA_ROOT": str(tmp_path),
-        "EGOPERSIST_ADT_LICENCE_APPROVED": "no",
+        "WISE_EGOMAP_DATA_ROOT": str(tmp_path),
+        "WISE_EGOMAP_ADT_LICENCE_APPROVED": "no",
     }
 
     result = run_bash(
@@ -61,8 +61,8 @@ def test_download_wrapper_rejects_untrusted_scheme(tmp_path: Path) -> None:
     output.mkdir()
     environment = {
         **os.environ,
-        "EGOPERSIST_DATA_ROOT": str(tmp_path),
-        "EGOPERSIST_ADT_LICENCE_APPROVED": "yes",
+        "WISE_EGOMAP_DATA_ROOT": str(tmp_path),
+        "WISE_EGOMAP_ADT_LICENCE_APPROVED": "yes",
     }
 
     result = run_bash(
@@ -87,19 +87,19 @@ def test_cluster_env_fails_on_missing_path(tmp_path: Path) -> None:
     project_root = Path(__file__).resolve().parents[1]
     environment = {
         **os.environ,
-        "EGOPERSIST_PROJECT_ROOT": str(project_root),
-        "EGOPERSIST_DATA_ROOT": str(tmp_path / "absent"),
-        "EGOPERSIST_RUN_ROOT": str(tmp_path),
-        "EGOPERSIST_IMAGE": str(tmp_path / "absent.sif"),
-        "EGOPERSIST_DATA_CONFIG": str(project_root / "configs/data/adt_v1.yaml"),
-        "EGOPERSIST_LABEL_CONFIG": str(project_root / "configs/labels_v1.yaml"),
-        "EGOPERSIST_EXPERIMENT_CONFIG": str(
+        "WISE_EGOMAP_PROJECT_ROOT": str(project_root),
+        "WISE_EGOMAP_DATA_ROOT": str(tmp_path / "absent"),
+        "WISE_EGOMAP_RUN_ROOT": str(tmp_path),
+        "WISE_EGOMAP_IMAGE": str(tmp_path / "absent.sif"),
+        "WISE_EGOMAP_DATA_CONFIG": str(project_root / "configs/data/adt_v1.yaml"),
+        "WISE_EGOMAP_LABEL_CONFIG": str(project_root / "configs/labels_v1.yaml"),
+        "WISE_EGOMAP_EXPERIMENT_CONFIG": str(
             project_root / "configs/experiment/evidence_gru.yaml"
         ),
-        "EGOPERSIST_MODEL_CONFIG": str(
+        "WISE_EGOMAP_MODEL_CONFIG": str(
             project_root / "configs/model/evidence_gru.yaml"
         ),
-        "EGOPERSIST_SPLIT_FILE": str(tmp_path / "absent.json"),
+        "WISE_EGOMAP_SPLIT_FILE": str(tmp_path / "absent.json"),
     }
     result = run_bash(
         f"bash {project_root}/scripts/check_cluster_env.sh",
@@ -107,27 +107,27 @@ def test_cluster_env_fails_on_missing_path(tmp_path: Path) -> None:
         env=environment,
     )
     assert result.returncode != 0
-    assert "EGOPERSIST_DATA_ROOT" in result.stderr
+    assert "WISE_EGOMAP_DATA_ROOT" in result.stderr
 
 
 def test_slurm_templates_require_paths_early() -> None:
     project_root = Path(__file__).resolve().parents[1]
     for name in ("preprocess", "features", "train", "eval"):
         result = run_bash(
-            f"env -u EGOPERSIST_PROJECT_ROOT bash {project_root}/jobs/{name}.sbatch",
+            f"env -u WISE_EGOMAP_PROJECT_ROOT bash {project_root}/jobs/{name}.sbatch",
             cwd=project_root,
             env={**os.environ},
         )
         assert result.returncode != 0
-        assert "EGOPERSIST_PROJECT_ROOT" in result.stderr
+        assert "WISE_EGOMAP_PROJECT_ROOT" in result.stderr
 
 
 def test_smoke_script_fails_early_without_env() -> None:
     project_root = Path(__file__).resolve().parents[1]
     result = run_bash(
-        f"env -u EGOPERSIST_PROJECT_ROOT bash {project_root}/scripts/smoke_cluster.sh",
+        f"env -u WISE_EGOMAP_PROJECT_ROOT bash {project_root}/scripts/smoke_cluster.sh",
         cwd=project_root,
         env={**os.environ},
     )
     assert result.returncode != 0
-    assert "EGOPERSIST_PROJECT_ROOT" in result.stderr
+    assert "WISE_EGOMAP_PROJECT_ROOT" in result.stderr

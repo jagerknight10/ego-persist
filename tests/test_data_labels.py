@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from egopersist.contracts import EventType, LabelClass
-from egopersist.data import TrackSample, label_track, load_label_config
+from wise_egomap.contracts import EventType, LabelClass
+from wise_egomap.data import TrackSample, label_track, load_label_config
 
 CONFIG = Path(__file__).resolve().parents[1] / "configs" / "labels_v1.yaml"
 

@@ -1,4 +1,4 @@
-# EgoPersist Agent Rules
+# WISE-EgoMap Agent Rules
 
 ## Language
 
@@ -20,7 +20,7 @@ Keep answers short unless the user asks for an explanation.
 1. Use Python 3.11 or 3.12.
 2. Use typed public functions.
 3. Add a test for each new behaviour.
-4. Keep modules separated by the contracts in `src/egopersist/contracts`.
+4. Keep modules separated by the contracts in `src/wise_egomap/contracts`.
 5. Use SI units and put the unit in the field name.
 6. Never use future frames in causal decisions.
 7. Never use ground-truth object pose as a model input.
