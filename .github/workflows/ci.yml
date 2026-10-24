@@ -15,10 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Read uv version
+        id: uvversion
+        run: echo "version=$(tr -d '[:space:]' < environment/uv-version.txt)" >> "$GITHUB_OUTPUT"
+
       - name: Install uv
         uses: astral-sh/setup-uv@v6
         with:
-          version-file: environment/uv-version.txt
+          version: ${{ steps.uvversion.outputs.version }}
           enable-cache: true
 
       - name: Install Python

@@ -5,7 +5,7 @@
 | Item | Value |
 |---|---|
 | Python | 3.11 |
-| Package manager | `uv` 0.8.13 |
+| Package manager | `uv` 0.13.5 |
 | Container | Apptainer |
 | Base image | `python:3.11.14-slim-bookworm` |
 
@@ -14,8 +14,9 @@ image digest. A digest gives an exact base image.
 
 ## Make the lock file
 
-Do this step on a machine with network access. The cluster login node is
-suitable. Do not use this laptop.
+`uv.lock` is committed in the repository. Regenerate it only when
+`pyproject.toml` changes. Do this on a machine with network access, such
+as the cluster login node.
 
 ```bash
 cd "$EGOPERSIST_PROJECT_ROOT"

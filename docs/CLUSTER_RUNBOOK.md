@@ -41,8 +41,7 @@ source "$HOME/egopersist-cluster.env"
 ## 2. Lock and image (needs network)
 
 ```bash
-bash scripts/lock_environment.sh        # needs uv 0.8.13 + python3.11
-git add uv.lock && git commit -m "chore: lock cluster environment"
+bash scripts/lock_environment.sh        # needs uv 0.13.5 + python3.11
 bash scripts/build_container.sh         # uses $EGOPERSIST_IMAGE
 apptainer test "$EGOPERSIST_IMAGE"
 bash scripts/check_cluster_env.sh
