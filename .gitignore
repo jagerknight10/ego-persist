@@ -43,3 +43,4 @@ scratch/
 
 # Parallel agent worktrees
 .worktrees/
+data/
