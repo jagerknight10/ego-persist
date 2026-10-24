@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import pytest
 
+from egopersist.contracts import LabelClass
 from egopersist.visualization import (
     ReplayMapEntry,
     answer_object_query,
     build_demo_replay,
 )
-from egopersist.contracts import LabelClass
 
 
 def test_query_returns_state_position_and_confidence() -> None:
@@ -35,7 +35,11 @@ def test_query_during_occlusion_reports_unknown() -> None:
 def test_query_matches_display_name_without_case() -> None:
     result = answer_object_query(
         "MUG",
-        [ReplayMapEntry("mug", "Mug", "mug", (1.0, 2.0, 3.0), LabelClass.STABLE, 0.8, 1)],
+        [
+            ReplayMapEntry(
+                "mug", "Mug", "mug", (1.0, 2.0, 3.0), LabelClass.STABLE, 0.8, 1
+            )
+        ],
         timestamp_s=1.0,
     )
     assert result.position_m == (1.0, 2.0, 3.0)
@@ -50,6 +54,10 @@ def test_query_rejects_negative_time() -> None:
     with pytest.raises(ValueError, match="non-negative"):
         answer_object_query(
             "mug",
-            [ReplayMapEntry("mug", "Mug", "mug", (1.0, 2.0, 3.0), LabelClass.STABLE, 0.8, 1)],
+            [
+                ReplayMapEntry(
+                    "mug", "Mug", "mug", (1.0, 2.0, 3.0), LabelClass.STABLE, 0.8, 1
+                )
+            ],
             timestamp_s=-1.0,
         )

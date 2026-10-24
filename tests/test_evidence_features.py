@@ -77,9 +77,7 @@ def test_deviation_from_committed_is_causal() -> None:
 def test_ratio_saturates_above_threshold() -> None:
     state = TrackFeatureState()
     state.update(view(0.5), dynamic=False)
-    values = state.update(
-        view(1.0, pos=(2.0, 2.0, 3.0), disp=0.9), dynamic=False
-    )
+    values = state.update(view(1.0, pos=(2.0, 2.0, 3.0), disp=0.9), dynamic=False)
     assert values[FEATURE_NAMES.index("ratio_to_change_threshold")] == 1.0
 
 

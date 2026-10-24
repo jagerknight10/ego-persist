@@ -1,0 +1,62 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "feat/**"]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version-file: environment/uv-version.txt
+          enable-cache: true
+
+      - name: Install Python
+        run: uv python install 3.11
+
+      - name: Install the locked environment
+        run: |
+          if [[ -f uv.lock ]]; then
+            uv sync --frozen --extra dev --python 3.11
+          else
+            echo "::warning title=uv.lock missing::The lead must commit uv.lock before a release build."
+            uv sync --extra dev --python 3.11
+          fi
+
+      - name: Check formatting
+        run: |
+          uv run --frozen ruff format --check \
+            scripts \
+            tests/test_infra_provenance.py \
+            tests/test_infra_repo_policy.py \
+            tests/test_infra_scripts.py
+
+      - name: Lint
+        run: |
+          uv run --frozen ruff check \
+            scripts \
+            tests/test_infra_provenance.py \
+            tests/test_infra_repo_policy.py \
+            tests/test_infra_scripts.py
+
+      - name: Check repository policy
+        run: bash scripts/check_repo_policy.sh
+
+      - name: Check shell syntax
+        run: bash scripts/check_shell_syntax.sh
+
+      - name: Run tests
+        run: uv run --frozen python -m pytest -q
+
+      - name: Compile Python
+        run: uv run --frozen python -m compileall -q src scripts tests

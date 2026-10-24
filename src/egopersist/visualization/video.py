@@ -7,8 +7,9 @@ small local artifact.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from egopersist.contracts import DecisionAction, LabelClass
 from egopersist.visualization.replay import (
@@ -191,8 +192,7 @@ def _draw_evidence(axis: Any, frame: ReplayFrame) -> None:
         axis.text(
             0.04,
             y_position,
-            f"{item.label}: {item.value:.2f} {item.unit} "
-            f"(gate {item.threshold:.2f})",
+            f"{item.label}: {item.value:.2f} {item.unit} (gate {item.threshold:.2f})",
             color=TEXT,
             fontsize=8,
             va="top",
@@ -221,8 +221,7 @@ def _draw_evidence(axis: Any, frame: ReplayFrame) -> None:
     axis.text(
         0.04,
         0.10,
-        f"{action}  {frame.query.object_name}  "
-        f"{frame.query.confidence:.0%} confidence",
+        f"{action}  {frame.query.object_name}  {frame.query.confidence:.0%} confidence",
         color=action_color,
         fontsize=11,
         fontweight="bold",
@@ -329,9 +328,7 @@ def write_demo_video(
     if suffix not in {".mp4", ".gif"}:
         raise ValueError("output_path must end with .mp4 or .gif")
     scenarios = (
-        (replay.scenario(scenario_id),)
-        if scenario_id is not None
-        else replay.scenarios
+        (replay.scenario(scenario_id),) if scenario_id is not None else replay.scenarios
     )
     try:
         from matplotlib import animation
@@ -348,7 +345,7 @@ def write_demo_video(
         with writer.saving(first_figure, str(path), dpi=100):
             for index, scenario in enumerate(scenarios):
                 for frame_index in range(len(scenario.frames)):
-                    figure = (
+                    _figure = (
                         first_figure
                         if index == 0 and frame_index == 0
                         else render_frame_figure(scenario, frame_index)

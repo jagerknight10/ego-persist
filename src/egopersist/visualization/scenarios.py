@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 from egopersist.contracts import LabelClass
 from egopersist.visualization.policy import (
@@ -96,12 +96,8 @@ def _build_frame(
                 instant_label=(
                     other.label if other is not None else LabelClass.UNKNOWN
                 ),
-                instant_action=(
-                    other.action if other is not None else item.action
-                ),
-                instant_confidence=(
-                    other.confidence if other is not None else 0.0
-                ),
+                instant_action=(other.action if other is not None else item.action),
+                instant_confidence=(other.confidence if other is not None else 0.0),
                 instant_reason=(
                     other.reason
                     if other is not None
@@ -135,9 +131,7 @@ def _run_scenario(
     focus_object_id: str,
     duration_s: float,
     initial_map: Sequence[ReplayMapEntry],
-    frames: Iterable[
-        tuple[float, str, Sequence[ReplayObservation]]
-    ],
+    frames: Iterable[tuple[float, str, Sequence[ReplayObservation]]],
     key_events: Sequence[ReplayEvent],
     object_names: dict[str, str],
 ) -> ReplayScenario:
@@ -184,7 +178,12 @@ def _table() -> ReplayMapEntry:
 def build_passing_person() -> ReplayScenario:
     """A person crosses the view. EgoPersist rejects the human candidate."""
     initial_map = (_mug_initial(), _bottle(), _table())
-    names = {"mug": "Mug", "bottle": "Bottle", "table": "Table", "person": "Passing person"}
+    names = {
+        "mug": "Mug",
+        "bottle": "Bottle",
+        "table": "Table",
+        "person": "Passing person",
+    }
     observations: list[tuple[float, str, tuple[ReplayObservation, ...]]] = []
     person_y = (-0.35, -0.20, -0.05, 0.10, 0.25, 0.40)
     captions = (
@@ -211,11 +210,23 @@ def build_passing_person() -> ReplayScenario:
                 timestamp_s,
                 captions[index],
                 (
-                    _observation("mug", "Mug", "mug", (0.0, 0.0, 0.80), (0.10, 0.10, 0.12)),
                     _observation(
-                        "bottle", "Bottle", "bottle", (0.45, 0.30, 0.90), (0.08, 0.08, 0.28)
+                        "mug", "Mug", "mug", (0.0, 0.0, 0.80), (0.10, 0.10, 0.12)
                     ),
-                    _observation("table", "Table", "table", (0.15, 0.10, 0.40), (0.80, 0.60, 0.05)),
+                    _observation(
+                        "bottle",
+                        "Bottle",
+                        "bottle",
+                        (0.45, 0.30, 0.90),
+                        (0.08, 0.08, 0.28),
+                    ),
+                    _observation(
+                        "table",
+                        "Table",
+                        "table",
+                        (0.15, 0.10, 0.40),
+                        (0.80, 0.60, 0.05),
+                    ),
                     person,
                 ),
             )
@@ -285,9 +296,19 @@ def build_durable_move() -> ReplayScenario:
                 (
                     _observation("mug", "Mug", "mug", mug_position, (0.10, 0.10, 0.12)),
                     _observation(
-                        "bottle", "Bottle", "bottle", (0.45, 0.30, 0.90), (0.08, 0.08, 0.28)
+                        "bottle",
+                        "Bottle",
+                        "bottle",
+                        (0.45, 0.30, 0.90),
+                        (0.08, 0.08, 0.28),
                     ),
-                    _observation("table", "Table", "table", (0.15, 0.10, 0.40), (0.80, 0.60, 0.05)),
+                    _observation(
+                        "table",
+                        "Table",
+                        "table",
+                        (0.15, 0.10, 0.40),
+                        (0.80, 0.60, 0.05),
+                    ),
                 ),
             )
         )
@@ -347,7 +368,9 @@ def build_occlusion() -> ReplayScenario:
             _observation(
                 "bottle", "Bottle", "bottle", (0.45, 0.30, 0.90), (0.08, 0.08, 0.28)
             ),
-            _observation("table", "Table", "table", (0.15, 0.10, 0.40), (0.80, 0.60, 0.05)),
+            _observation(
+                "table", "Table", "table", (0.15, 0.10, 0.40), (0.80, 0.60, 0.05)
+            ),
         ]
         if mug_visible:
             items.append(

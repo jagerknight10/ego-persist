@@ -6,8 +6,9 @@ replace it without a change to the replay, viewer, query, or renderer.
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Protocol, Sequence
+from typing import Protocol
 
 from egopersist.contracts import Decision, DecisionAction, LabelClass
 from egopersist.visualization.replay import (
@@ -36,9 +37,7 @@ class PolicySnapshot:
 class StateMachineAdapter(Protocol):
     """Adapter contract used by the demo and a later state machine."""
 
-    def reset(
-        self, sequence_id: str, initial_map: Sequence[ReplayMapEntry]
-    ) -> None:
+    def reset(self, sequence_id: str, initial_map: Sequence[ReplayMapEntry]) -> None:
         """Remove state and load a committed map."""
 
     def update(
@@ -82,7 +81,10 @@ def _probabilities(
 
 
 def _distance(first: Position3, second: Position3) -> float:
-    return sum((left - right) ** 2 for left, right in zip(first, second, strict=True)) ** 0.5
+    return (
+        sum((left - right) ** 2 for left, right in zip(first, second, strict=True))
+        ** 0.5
+    )
 
 
 def _evidence(
@@ -179,9 +181,7 @@ class DemoStateMachineAdapter:
         self._tracks: dict[str, _Track] = {}
         self._map_version = 0
 
-    def reset(
-        self, sequence_id: str, initial_map: Sequence[ReplayMapEntry]
-    ) -> None:
+    def reset(self, sequence_id: str, initial_map: Sequence[ReplayMapEntry]) -> None:
         """Load the committed map for a new sequence."""
         if not sequence_id:
             raise ValueError("sequence_id must be non-empty")
@@ -531,9 +531,7 @@ class InstantUpdateAdapter:
         self._objects: dict[str, ReplayMapEntry] = {}
         self._map_version = 0
 
-    def reset(
-        self, sequence_id: str, initial_map: Sequence[ReplayMapEntry]
-    ) -> None:
+    def reset(self, sequence_id: str, initial_map: Sequence[ReplayMapEntry]) -> None:
         """Load the map for a new sequence."""
         if not sequence_id:
             raise ValueError("sequence_id must be non-empty")
@@ -571,9 +569,11 @@ class InstantUpdateAdapter:
         }
         for observation in observations:
             previous = self._objects.get(observation.object_id)
-            changed = previous is None or _distance(
-                previous.position_m, observation.position_m
-            ) > CHANGE_TRANSLATION_M
+            changed = (
+                previous is None
+                or _distance(previous.position_m, observation.position_m)
+                > CHANGE_TRANSLATION_M
+            )
             if changed:
                 self._map_version += 1
             self._objects[observation.object_id] = ReplayMapEntry(
@@ -592,13 +592,9 @@ class InstantUpdateAdapter:
                     timestamp_s=timestamp_s,
                     object_id=observation.object_id,
                     label=(
-                        LabelClass.PERSISTENT_CHANGE
-                        if changed
-                        else LabelClass.STABLE
+                        LabelClass.PERSISTENT_CHANGE if changed else LabelClass.STABLE
                     ),
-                    action=(
-                        DecisionAction.COMMIT if changed else DecisionAction.KEEP
-                    ),
+                    action=(DecisionAction.COMMIT if changed else DecisionAction.KEEP),
                     confidence=0.99,
                     probabilities=_probabilities(
                         stable=0.01 if changed else 0.98,
@@ -624,9 +620,7 @@ class InstantUpdateAdapter:
                     max_value=1.0,
                 )
             )
-        entries = tuple(
-            sorted(self._objects.values(), key=lambda item: item.object_id)
-        )
+        entries = tuple(sorted(self._objects.values(), key=lambda item: item.object_id))
         return PolicySnapshot(
             map_entries=entries,
             decisions=tuple(decisions),

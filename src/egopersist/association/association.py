@@ -12,9 +12,8 @@ poses and the current keyframe's observations.
 
 from __future__ import annotations
 
-import itertools
+from collections.abc import Sequence
 from dataclasses import dataclass, field
-from typing import Sequence
 
 import numpy as np
 from scipy.optimize import linear_sum_assignment
@@ -91,7 +90,7 @@ def match(cost: np.ndarray, gate_m: float) -> list[tuple[int, int]]:
         return []
     row, col = linear_sum_assignment(cost)
     matches = []
-    for i, j in zip(row, col):
+    for i, j in zip(row, col, strict=False):
         if cost[i, j] >= _SENTINEL:
             continue
         if cost[i, j] > 2.0:  # dist/gate + (1 - IoU) max ~2 when in gate
@@ -129,7 +128,9 @@ class TrackBank:
         self.tracks.append(track)
         return track
 
-    def associate(self, observations: Sequence[Observation], gate_m: float) -> AssociationResult:
+    def associate(
+        self, observations: Sequence[Observation], gate_m: float
+    ) -> AssociationResult:
         result = AssociationResult()
         if not observations:
             return result
@@ -142,7 +143,9 @@ class TrackBank:
         result.unmatched_obs = [j for j in range(len(observations)) if j not in taken]
         return result
 
-    def apply(self, result: AssociationResult, observations: Sequence[Observation]) -> list[Track]:
+    def apply(
+        self, result: AssociationResult, observations: Sequence[Observation]
+    ) -> list[Track]:
         """Update track states in place; return new provisional tracks."""
         for i, j in result.matches:
             obs = observations[j]
@@ -153,7 +156,9 @@ class TrackBank:
             track.last_s = obs.timestamp_s
             track.hits += 1
             track.confirmed = track.hits >= self.confirm_hits
-        new_tracks = [self.add_provisional(observations[j]) for j in result.unmatched_obs]
+        new_tracks = [
+            self.add_provisional(observations[j]) for j in result.unmatched_obs
+        ]
         return new_tracks
 
     def missing_tracks(self, now_s: float) -> list[Track]:

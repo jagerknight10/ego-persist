@@ -52,9 +52,7 @@ def test_deviation_prefers_persistent_change() -> None:
     acc = BayesAccumulator(window=5)
     state = TrackFeatureState()
     for i in range(8):
-        values = state.update(
-            view(i * 0.5, pos=(1.5, 2.0, 3.0)), dynamic=False
-        )
+        values = state.update(view(i * 0.5, pos=(1.5, 2.0, 3.0)), dynamic=False)
         acc.observe(values, False)
     probs = acc.probabilities()
     assert probs[LabelClass.PERSISTENT_CHANGE] > probs[LabelClass.STABLE]

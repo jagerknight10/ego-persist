@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import math
 
-from egopersist.contracts import LabelClass, Observation, TrackObservation
+from egopersist.contracts import Observation, TrackObservation
 
 INPUT_DIM = 20
 
@@ -60,7 +60,7 @@ def _angle_between_wxyz(
     a: tuple[float, float, float, float],
     b: tuple[float, float, float, float],
 ) -> float:
-    dot = max(-1.0, min(1.0, abs(sum(x * y for x, y in zip(a, b)))))
+    dot = max(-1.0, min(1.0, abs(sum(x * y for x, y in zip(a, b, strict=False)))))
     return math.degrees(2.0 * math.acos(dot))
 
 
@@ -87,8 +87,7 @@ class TrackFeatureState:
         weight = self.mean_orientation_weight + 1.0
         old = self.mean_orientation
         total = [
-            old[i] * self.mean_orientation_weight + orientation[i]
-            for i in range(4)
+            old[i] * self.mean_orientation_weight + orientation[i] for i in range(4)
         ]
         norm = math.sqrt(sum(v * v for v in total))
         if norm > 1e-12:
@@ -103,18 +102,12 @@ class TrackFeatureState:
             if self.last_timestamp_s is not None
             else 0.0
         )
-        speed = (
-            obs.displacement_m / dt if dt > 1e-9 else 0.0
-        )
-        committed_dev_m = math.dist(
-            obs.centroid_world_m, view.committed_position_m
-        )
+        speed = obs.displacement_m / dt if dt > 1e-9 else 0.0
+        committed_dev_m = math.dist(obs.centroid_world_m, view.committed_position_m)
         committed_dev_rot = _angle_between_wxyz(
             obs.orientation_wxyz, view.committed_orientation_wxyz
         )
-        ratio = _clamp(
-            max(obs.displacement_m, committed_dev_m) / _CHANGE_THRESHOLD_M
-        )
+        ratio = _clamp(max(obs.displacement_m, committed_dev_m) / _CHANGE_THRESHOLD_M)
 
         mask_norm = _clamp(obs.mask_area_px / _MASK_AREA_PX_NORM)
         if self.last_obs is not None:
@@ -125,9 +118,7 @@ class TrackFeatureState:
 
         if self.mean_orientation_weight > 0.0:
             angle_from_mean = _clamp(
-                _angle_between_wxyz(
-                    obs.orientation_wxyz, self.mean_orientation
-                )
+                _angle_between_wxyz(obs.orientation_wxyz, self.mean_orientation)
                 / _ANGLE_NORM_DEG
             )
         else:
@@ -144,9 +135,7 @@ class TrackFeatureState:
             else 0.0
         )
         mean_dev = (
-            sum(self.dev_window) / len(self.dev_window)
-            if self.dev_window
-            else 0.0
+            sum(self.dev_window) / len(self.dev_window) if self.dev_window else 0.0
         )
         time_since_change = (
             obs.timestamp_s - self.last_change_timestamp_s

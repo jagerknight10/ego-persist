@@ -20,13 +20,34 @@ class SplitSpec:
     sequence_ids: tuple[str, ...]
 
 
+#: Aliases accepted in split files. ``validation`` is canonicalised to
+#: ``val`` so cluster split writers and stage readers agree on one name.
+SPLIT_ALIASES = {"validation": "val", "test": "test"}
+
+
+def normalize_split_raw(raw: dict[str, list[str]]) -> dict[str, list[str]]:
+    """Apply split-name aliases and reject collisions."""
+    out: dict[str, list[str]] = {}
+    for name, items in raw.items():
+        canonical = SPLIT_ALIASES.get(name, name)
+        if canonical in out:
+            raise ValueError(
+                f"duplicate split: {name!r} and {canonical!r} alias to one name"
+            )
+        out[canonical] = list(items)
+    return out
+
+
 def load_splits(path: str | Path) -> dict[str, SplitSpec]:
-    """Load a split manifest: ``{"train": [...], "val": [...], ...}``."""
+    """Load a split manifest: ``{"train": [...], "val": [...], ...}``.
+
+    ``validation`` is accepted as an alias for ``val``.
+    """
     raw = json.loads(Path(path).read_text())
     if not isinstance(raw, dict) or not raw:
         raise ValueError("split manifest must be a non-empty object")
     splits: dict[str, SplitSpec] = {}
-    for name, items in raw.items():
+    for name, items in normalize_split_raw(raw).items():
         if not isinstance(items, list) or not all(
             isinstance(item, str) and item for item in items
         ):

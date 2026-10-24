@@ -127,7 +127,6 @@ def build_observations(
     previous: dict[int, tuple] = {}
     out: dict[int, list[Observation]] = {}
     for object_uid in sorted(seq.instances):
-        instance = seq.instances[object_uid]
         extent = seq.extents.get(object_uid)
         if extent is None:
             continue
@@ -142,10 +141,7 @@ def build_observations(
         else:
             continue
         rgb_items = streams.get(rgb_stream, {}).get(object_uid) if rgb_stream else None
-        all_items = {
-            stream: items.get(object_uid)
-            for stream, items in streams.items()
-        }
+        all_items = {stream: items.get(object_uid) for stream, items in streams.items()}
         observations: list[Observation] = []
         for t in times:
             if constant_pose is not None:
@@ -167,9 +163,7 @@ def build_observations(
                     if _box_at(items, t) is not None
                 )
                 co_visibility = seen / n_streams
-            depth_support = max(
-                0.0, min(1.0, _quality_at(cam_times, cam_scores, t))
-            )
+            depth_support = max(0.0, min(1.0, _quality_at(cam_times, cam_scores, t)))
             centroid = (float(pose[0]), float(pose[1]), float(pose[2]))
             # Appearance similarity is 1.0 until RGB crops (cluster stage)
             # replace the placeholder.
@@ -180,7 +174,8 @@ def build_observations(
             if prev is not None:
                 prev_pose, prev_ori = prev
                 displacement = math.dist(pose, prev_pose)
-                dot = max(-1.0, min(1.0, abs(sum(a * b for a, b in zip(orientation, prev_ori)))))
+                dots = (a * b for a, b in zip(orientation, prev_ori, strict=False))
+                dot = max(-1.0, min(1.0, abs(sum(dots))))
                 rotation = math.degrees(2.0 * math.acos(dot))
             previous[object_uid] = (pose, orientation)
             observations.append(

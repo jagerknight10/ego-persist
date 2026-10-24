@@ -39,7 +39,9 @@ def backproject_world(
     return camera.apply(p_camera)
 
 
-def camera_ray(u_px: float, v_px: float, pinhole: Pinhole) -> tuple[float, float, float]:
+def camera_ray(
+    u_px: float, v_px: float, pinhole: Pinhole
+) -> tuple[float, float, float]:
     """Unit ray direction, in camera coordinates, through a pixel."""
     fx, fy, cx, cy = pinhole
     if fx <= 0.0 or fy <= 0.0:

@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import argparse
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from egopersist.visualization.query import answer_object_query
 from egopersist.visualization.replay import ReplayDocument, ReplaySchemaError
@@ -35,9 +35,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     generate.add_argument("--output", type=Path, default=Path("demo-output"))
 
-    query = commands.add_parser(
-        "query", help="Answer the mug query at a replay time."
-    )
+    query = commands.add_parser("query", help="Answer the mug query at a replay time.")
     _add_replay_source(query)
     query.add_argument("--scenario", default="durable_mug_move")
     query.add_argument("--time", type=float, default=9.0)
@@ -89,7 +87,9 @@ def main(argv: Sequence[str] | None = None) -> int:
             return 0
         if args.command == "render":
             if args.frame is not None and args.output.suffix.lower() == ".png":
-                scenario = replay.scenario(args.scenario or replay.scenarios[0].scenario_id)
+                scenario = replay.scenario(
+                    args.scenario or replay.scenarios[0].scenario_id
+                )
                 path = write_frame_png(
                     scenario,
                     args.output,
@@ -104,7 +104,13 @@ def main(argv: Sequence[str] | None = None) -> int:
                 )
             print(f"Wrote {path}")
             return 0
-    except (LookupError, ReplaySchemaError, RuntimeError, ValueError, IndexError) as exc:
+    except (
+        LookupError,
+        ReplaySchemaError,
+        RuntimeError,
+        ValueError,
+        IndexError,
+    ) as exc:
         parser.error(str(exc))
     return 2
 

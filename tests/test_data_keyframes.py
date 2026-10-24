@@ -17,7 +17,7 @@ def test_keyframe_times_deterministic() -> None:
     assert times[0] == 0.0
     assert len(times) == 21
     assert times[-1] == 10.0
-    deltas = {round(b - a, 9) for a, b in zip(times, times[1:])}
+    deltas = {round(b - a, 9) for a, b in zip(times, times[1:], strict=False)}
     assert deltas == {0.5}
 
 
@@ -28,14 +28,18 @@ def test_keyframe_times_reject_bad_input() -> None:
         keyframe_times(10.0, 0.0, 2.0)
 
 
-@pytest.mark.skipif(not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present")
+@pytest.mark.skipif(
+    not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present"
+)
 def test_observations_static_and_dynamic_tracks() -> None:
     from egopersist.data import load_adt_sequence
 
     seq = load_adt_sequence(SEQ133)
     observations = build_observations(seq, 2.0)
     static = [uid for uid in observations if seq.instances[uid].motion_type == "static"]
-    dynamic = [uid for uid in observations if seq.instances[uid].motion_type == "dynamic"]
+    dynamic = [
+        uid for uid in observations if seq.instances[uid].motion_type == "dynamic"
+    ]
     assert len(static) > 100
     assert len(dynamic) >= 40
     for track in observations.values():
@@ -48,7 +52,9 @@ def test_observations_static_and_dynamic_tracks() -> None:
             assert 0.0 <= obs.depth_support <= 1.0
 
 
-@pytest.mark.skipif(not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present")
+@pytest.mark.skipif(
+    not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present"
+)
 def test_observations_causal_pose_lag() -> None:
     """Pose at a keyframe never comes from a later frame."""
     from egopersist.data import load_adt_sequence
@@ -56,7 +62,11 @@ def test_observations_causal_pose_lag() -> None:
     seq = load_adt_sequence(SEQ133)
     observations = build_observations(seq, 2.0)
     # find one dynamic track and check a midpoint keyframe
-    track = next(observations[uid] for uid in observations if seq.instances[uid].motion_type == "dynamic")
+    track = next(
+        observations[uid]
+        for uid in observations
+        if seq.instances[uid].motion_type == "dynamic"
+    )
     mid = track[len(track) // 2]
     # the observation timestamp must be >= the first pose timestamp (no lookahead start)
     assert mid.timestamp_s >= seq.start_s

@@ -68,18 +68,13 @@ def test_durable_move_defers_then_commits() -> None:
         (frame, item)
         for frame in scenario.frames
         for item in frame.decisions
-        if item.object_id == "mug"
-        and item.action is DecisionAction.COMMIT
+        if item.object_id == "mug" and item.action is DecisionAction.COMMIT
     ]
     assert len(transitions) == 1
     commit_frame, commit = transitions[0]
     assert commit.label is LabelClass.PERSISTENT_CHANGE
     assert commit_frame.timestamp_s == 7.5
-    first_change = next(
-        frame
-        for frame in scenario.frames
-        if frame.timestamp_s == 2.5
-    )
+    first_change = next(frame for frame in scenario.frames if frame.timestamp_s == 2.5)
     first_decision = next(
         item for item in first_change.decisions if item.object_id == "mug"
     )
@@ -91,7 +86,9 @@ def test_durable_move_defers_then_commits() -> None:
 
 def test_occlusion_does_not_remove_mug() -> None:
     scenario = build_demo_replay().scenario("occlusion")
-    hidden_frames = [frame for frame in scenario.frames if 2.0 <= frame.timestamp_s < 5.0]
+    hidden_frames = [
+        frame for frame in scenario.frames if 2.0 <= frame.timestamp_s < 5.0
+    ]
     assert hidden_frames
     for frame in hidden_frames:
         assert "mug" in {item.object_id for item in frame.ego_map}

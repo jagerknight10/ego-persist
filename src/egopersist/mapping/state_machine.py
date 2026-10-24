@@ -30,8 +30,8 @@ observations at or before t.
 from __future__ import annotations
 
 import math
+from collections.abc import Mapping
 from dataclasses import dataclass, field
-from typing import Mapping
 
 from egopersist.contracts.core import (
     Decision,
@@ -64,7 +64,7 @@ class StateMachineConfig:
     transient_probability: float = 0.80
 
     @classmethod
-    def from_labels_yaml(cls, raw: Mapping[str, object]) -> "StateMachineConfig":
+    def from_labels_yaml(cls, raw: Mapping[str, object]) -> StateMachineConfig:
         change = raw.get("change", {}) or {}
         persistent = raw.get("persistent", {}) or {}
         transient = raw.get("transient", {}) or {}
@@ -142,7 +142,9 @@ def _median(points: list[Position3]) -> Position3:
 def _normalize_probabilities(
     probabilities: Mapping[LabelClass, float],
 ) -> dict[LabelClass, float]:
-    values = {label: max(0.0, float(probabilities.get(label, 0.0))) for label in LabelClass}
+    values = {
+        label: max(0.0, float(probabilities.get(label, 0.0))) for label in LabelClass
+    }
     total = sum(values.values())
     if total <= 0.0:
         even = 1.0 / len(LabelClass)
@@ -284,7 +286,10 @@ class TrackStateMachine:
                 obs.orientation_wxyz,  # type: ignore[attr-defined]
                 mem.pre_change_q,
             )
-            if back_m <= cfg.revert_tolerance_m and back_deg <= cfg.revert_tolerance_deg:
+            if (
+                back_m <= cfg.revert_tolerance_m
+                and back_deg <= cfg.revert_tolerance_deg
+            ):
                 prev = committed
                 mem.label = LabelClass.STABLE
                 mem.committed_q = view.committed_orientation_wxyz
@@ -299,7 +304,9 @@ class TrackStateMachine:
                     view, mem, DecisionAction.REVERT, mem.original, prev
                 )
                 return (
-                    self._decision(view, mem.label, DecisionAction.REVERT, reason, probs),
+                    self._decision(
+                        view, mem.label, DecisionAction.REVERT, reason, probs
+                    ),
                     update,
                 )
 
@@ -339,7 +346,9 @@ class TrackStateMachine:
             if mem.suspect_co_vis
             else 0.0
         )
-        stable_new = all(_dist(p, mode) <= cfg.persistent_mode_tolerance_m for p in window)
+        stable_new = all(
+            _dist(p, mode) <= cfg.persistent_mode_tolerance_m for p in window
+        )
         gates = {
             "probability": p_change >= cfg.commit_probability,
             "visible_keyframes": n_vis >= cfg.commit_min_visible_keyframes,
@@ -361,7 +370,11 @@ class TrackStateMachine:
             update = self._record(view, mem, DecisionAction.COMMIT, mode, prev)
             return (
                 self._decision(
-                    view, LabelClass.PERSISTENT_CHANGE, DecisionAction.COMMIT, reason, probs
+                    view,
+                    LabelClass.PERSISTENT_CHANGE,
+                    DecisionAction.COMMIT,
+                    reason,
+                    probs,
                 ),
                 update,
             )
@@ -374,7 +387,9 @@ class TrackStateMachine:
         )
         update = self._record(view, mem, DecisionAction.DEFER, None, None)
         return (
-            self._decision(view, LabelClass.UNKNOWN, DecisionAction.DEFER, reason, probs),
+            self._decision(
+                view, LabelClass.UNKNOWN, DecisionAction.DEFER, reason, probs
+            ),
             update,
         )
 
@@ -396,7 +411,8 @@ class TrackStateMachine:
                 back_m <= cfg.revert_tolerance_m
                 and mem.original_q is not None
                 and rotation_angle_deg(
-                    obs.orientation_wxyz, mem.original_q  # type: ignore[attr-defined]
+                    obs.orientation_wxyz,
+                    mem.original_q,  # type: ignore[attr-defined]
                 )
                 <= cfg.revert_tolerance_deg
             ):
@@ -407,13 +423,20 @@ class TrackStateMachine:
                 mem.pre_change_q = None
                 self._clear_suspect(mem)
                 reason = f"revert: back at original pose ({back_m:.3f} m)"
-                update = self._record(view, mem, DecisionAction.REVERT, mem.original, prev)
+                update = self._record(
+                    view, mem, DecisionAction.REVERT, mem.original, prev
+                )
                 return (
-                    self._decision(view, mem.label, DecisionAction.REVERT, reason, probs),
+                    self._decision(
+                        view, mem.label, DecisionAction.REVERT, reason, probs
+                    ),
                     update,
                 )
         self._clear_suspect(mem)
-        if mem.label == LabelClass.UNKNOWN and mem.visible_keyframes >= cfg.commit_min_visible_keyframes:
+        if (
+            mem.label == LabelClass.UNKNOWN
+            and mem.visible_keyframes >= cfg.commit_min_visible_keyframes
+        ):
             mem.label = LabelClass.STABLE
         if mem.label == LabelClass.PERSISTENT_CHANGE:
             reason = "keep: stable at changed position"
@@ -422,7 +445,9 @@ class TrackStateMachine:
             reason = "keep: position matches map"
             action = DecisionAction.KEEP
         else:
-            reason = f"defer: insufficient evidence ({mem.visible_keyframes}/{cfg.commit_min_visible_keyframes} keyframes)"
+            min_kf = cfg.commit_min_visible_keyframes
+            have_kf = mem.visible_keyframes
+            reason = f"defer: insufficient evidence ({have_kf}/{min_kf} keyframes)"
             action = DecisionAction.DEFER
         update = self._record(view, mem, action, None, None)
         return self._decision(view, mem.label, action, reason, probs), update
@@ -455,9 +480,10 @@ class TrackStateMachine:
                 update,
             )
         if mem.label == LabelClass.TRANSIENT:
-            if mem.last_seen_s is not None and (
-                view.timestamp_s - mem.last_seen_s
-            ) > cfg.transient_return_window_s:
+            if (
+                mem.last_seen_s is not None
+                and (view.timestamp_s - mem.last_seen_s) > cfg.transient_return_window_s
+            ):
                 label = LabelClass.TRANSIENT
                 action = DecisionAction.REJECT
                 reason = (

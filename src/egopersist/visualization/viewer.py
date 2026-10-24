@@ -1,5 +1,7 @@
 """Self-contained HTML replay viewer with no network or external assets."""
 
+# ruff: noqa: E501
+
 from __future__ import annotations
 
 import json
@@ -91,9 +93,7 @@ def render_replay_html(replay: ReplayDocument) -> str:
         '<main><div id="tabs" class="tabs"></div><div id="app"></div></main>\n'
         '<script id="replay-data" type="application/json">'
         f"{data}</script>\n"
-        "<script>\n"
-        + _VIEWER_SCRIPT
-        + "</script>\n"
+        "<script>\n" + _VIEWER_SCRIPT + "</script>\n"
         "</body>\n"
         "</html>\n"
     )

@@ -41,7 +41,7 @@ class LabelConfig:
     visibility_co_visibility_threshold: float
 
     @classmethod
-    def from_yaml(cls, path: str | Path) -> "LabelConfig":
+    def from_yaml(cls, path: str | Path) -> LabelConfig:
         raw = yaml.safe_load(Path(path).read_text())
         if raw.get("version") != 1:
             raise ValueError("unsupported labels config version")
@@ -53,25 +53,17 @@ class LabelConfig:
             persistent_min_visible_keyframes=int(
                 raw["persistent"]["min_visible_keyframes"]
             ),
-            persistent_mode_tolerance_m=float(
-                raw["persistent"]["mode_tolerance_m"]
-            ),
+            persistent_mode_tolerance_m=float(raw["persistent"]["mode_tolerance_m"]),
             persistent_mode_tolerance_deg=float(
                 raw["persistent"]["mode_tolerance_deg"]
             ),
-            transient_return_window_s=float(
-                raw["transient"]["return_window_s"]
-            ),
-            transient_return_tolerance_m=float(
-                raw["transient"]["return_tolerance_m"]
-            ),
+            transient_return_window_s=float(raw["transient"]["return_window_s"]),
+            transient_return_tolerance_m=float(raw["transient"]["return_tolerance_m"]),
             transient_return_tolerance_deg=float(
                 raw["transient"]["return_tolerance_deg"]
             ),
             visibility_min_mask_pixels=int(raw["visibility"]["min_mask_pixels"]),
-            visibility_min_depth_support=float(
-                raw["visibility"]["min_depth_support"]
-            ),
+            visibility_min_depth_support=float(raw["visibility"]["min_depth_support"]),
             visibility_co_visibility_threshold=float(
                 raw["visibility"]["co_visibility_threshold"]
             ),
@@ -101,7 +93,7 @@ def _angle_between_wxyz(
     a: tuple[float, float, float, float],
     b: tuple[float, float, float, float],
 ) -> float:
-    dot = max(-1.0, min(1.0, abs(sum(x * y for x, y in zip(a, b)))))
+    dot = max(-1.0, min(1.0, abs(sum(x * y for x, y in zip(a, b, strict=False)))))
     return math.degrees(2.0 * math.acos(dot))
 
 
@@ -223,14 +215,13 @@ def label_track(
                 continue
             poses = [samples[i].pose for i in window]
             oris = [samples[i].orientation_wxyz for i in window]
-            mode_pose = tuple(sum(p) / len(p) for p in zip(*poses))
+            mode_pose = tuple(sum(p) / len(p) for p in zip(*poses, strict=False))
             stable_pose = all(
                 math.dist(p, mode_pose) <= config.persistent_mode_tolerance_m
                 for p in poses
             )
             stable_ori = all(
-                _angle_between_wxyz(o, oris[-1])
-                <= config.persistent_mode_tolerance_deg
+                _angle_between_wxyz(o, oris[-1]) <= config.persistent_mode_tolerance_deg
                 for o in oris
             )
             if stable_pose and stable_ori:
@@ -261,7 +252,9 @@ def label_track(
                 change_start = index
                 change_anchor = pose
 
-    stable_keys = [i for i in range(len(samples)) if per_keyframe[i] is LabelClass.STABLE]
+    stable_keys = [
+        i for i in range(len(samples)) if per_keyframe[i] is LabelClass.STABLE
+    ]
     if stable_keys:
         events.append(
             EventLabel(

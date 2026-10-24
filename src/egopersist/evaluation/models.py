@@ -67,9 +67,7 @@ class ActionEvent:
                 raise ValueError(f"{name} must be a non-empty string")
         if not isinstance(self.frame_id, str):
             raise TypeError("frame_id must be a string")
-        object.__setattr__(
-            self, "timestamp_s", _time(self.timestamp_s, "timestamp_s")
-        )
+        object.__setattr__(self, "timestamp_s", _time(self.timestamp_s, "timestamp_s"))
         if not isinstance(self.action, DecisionAction):
             raise TypeError("action must be a DecisionAction")
         object.__setattr__(
@@ -140,9 +138,7 @@ class PositionReference:
             value = getattr(self, name)
             if not isinstance(value, str) or not value:
                 raise ValueError(f"{name} must be a non-empty string")
-        object.__setattr__(
-            self, "timestamp_s", _time(self.timestamp_s, "timestamp_s")
-        )
+        object.__setattr__(self, "timestamp_s", _time(self.timestamp_s, "timestamp_s"))
         position = _position(self.position_m, "position_m")
         if position is None:
             raise ValueError("position_m must not be None")

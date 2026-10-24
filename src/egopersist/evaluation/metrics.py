@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass
-from typing import Iterable, Sequence
 
 from egopersist.contracts import (
     Decision,
@@ -13,7 +13,6 @@ from egopersist.contracts import (
     LabelClass,
     MapUpdate,
 )
-
 from egopersist.evaluation.matching import (
     EventMatching,
     action_in_event,
@@ -40,8 +39,7 @@ def is_persistent_change(event: EventLabel) -> bool:
 def is_transient(event: EventLabel) -> bool:
     """Return true if an event is transient."""
     return (
-        event.event_type == EventType.TRANSIENT
-        or event.label == LabelClass.TRANSIENT
+        event.event_type == EventType.TRANSIENT or event.label == LabelClass.TRANSIENT
     )
 
 
@@ -169,8 +167,7 @@ def transient_false_commit_rate(
     transient_events = tuple(event for event in event_list if is_transient(event))
     affected = sum(
         any(
-            action.action == DecisionAction.COMMIT
-            and action_in_event(action, event)
+            action.action == DecisionAction.COMMIT and action_in_event(action, event)
             for action in action_list
         )
         for event in transient_events
@@ -279,8 +276,7 @@ def commit_timing(
         commits = sorted(
             action.timestamp_s
             for action in action_list
-            if action.action == DecisionAction.COMMIT
-            and action_in_event(action, event)
+            if action.action == DecisionAction.COMMIT and action_in_event(action, event)
         )
         delay = commits[0] - event.start_s if commits else None
         stale = delay if delay is not None else event.end_s - event.start_s
@@ -302,13 +298,9 @@ def commit_timing(
     total_stale = sum(entry.stale_map_duration_s for entry in entries)
     return CommitTimingReport(
         entries=tuple(entries),
-        time_to_correct_commit_s=(
-            sum(delays) / len(delays) if delays else None
-        ),
+        time_to_correct_commit_s=(sum(delays) / len(delays) if delays else None),
         total_stale_map_duration_s=total_stale,
-        mean_stale_map_duration_s=(
-            total_stale / len(entries) if entries else 0.0
-        ),
+        mean_stale_map_duration_s=(total_stale / len(entries) if entries else 0.0),
     )
 
 
@@ -549,9 +541,7 @@ def update_utility_at_0_30_m(
         threshold_m=threshold_m,
         entries=tuple(entries),
         mean_utility=(
-            sum(entry.utility for entry in entries) / len(entries)
-            if entries
-            else 0.0
+            sum(entry.utility for entry in entries) / len(entries) if entries else 0.0
         ),
         useful_count=useful,
         harmful_count=harmful,

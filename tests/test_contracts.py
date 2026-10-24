@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 
@@ -158,7 +158,7 @@ def test_run_manifest_json_round_trip() -> None:
         data_split_hash="b" * 64,
         label_config_hash="c" * 64,
         seed=0,
-        started_at_utc=datetime(2026, 10, 24, tzinfo=timezone.utc),
+        started_at_utc=datetime(2026, 10, 24, tzinfo=UTC),
         hostname="node-1",
         python_version="3.11",
         packages={"torch": "2.3.0"},

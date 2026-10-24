@@ -9,8 +9,8 @@ never influence the temperature.
 from __future__ import annotations
 
 import math
+from collections.abc import Sequence
 from dataclasses import dataclass
-from typing import Sequence
 
 
 def nll(logits: Sequence[float], target: int) -> float:
@@ -25,7 +25,8 @@ def fit_temperature(
     val_logits: list[list[float]],
     val_targets: list[int],
     grid: Sequence[float] = tuple(
-        round(0.25 + 0.25 * i, 2) for i in range(13)  # 0.25 .. 3.5
+        round(0.25 + 0.25 * i, 2)
+        for i in range(13)  # 0.25 .. 3.5
     ),
 ) -> float:
     """Grid-search temperature minimising mean NLL on val."""
@@ -34,7 +35,8 @@ def fit_temperature(
     best_t = 1.0
     best_nll = math.inf
     for t in grid:
-        mean = sum(nll(logits, target) for logits, target in zip(val_logits, val_targets)) / len(val_logits)
+        pairs = zip(val_logits, val_targets, strict=False)
+        mean = sum(nll(logits, target) for logits, target in pairs) / len(val_logits)
         if mean < best_nll:
             best_nll = mean
             best_t = t

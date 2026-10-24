@@ -167,7 +167,9 @@ class _Record:
 
     def to_dict(self) -> dict[str, Any]:
         """Return a JSON-compatible dictionary."""
-        return {field.name: _encode(getattr(self, field.name)) for field in fields(self)}
+        return {
+            field.name: _encode(getattr(self, field.name)) for field in fields(self)
+        }
 
     @classmethod
     def from_dict(cls: type[RecordT], data: dict[str, Any]) -> RecordT:
@@ -221,19 +223,27 @@ class Observation(_Record):
         object.__setattr__(
             self, "timestamp_s", _non_negative(self.timestamp_s, "timestamp_s")
         )
-        if not isinstance(self.mask_area_px, int) or isinstance(self.mask_area_px, bool):
+        if not isinstance(self.mask_area_px, int) or isinstance(
+            self.mask_area_px, bool
+        ):
             raise TypeError("mask_area_px must be an integer")
         if self.mask_area_px <= 0:
             raise ValueError("mask_area_px must be positive")
-        object.__setattr__(self, "depth_support", _unit(self.depth_support, "depth_support"))
-        object.__setattr__(self, "co_visibility", _unit(self.co_visibility, "co_visibility"))
+        object.__setattr__(
+            self, "depth_support", _unit(self.depth_support, "depth_support")
+        )
+        object.__setattr__(
+            self, "co_visibility", _unit(self.co_visibility, "co_visibility")
+        )
         object.__setattr__(
             self,
             "appearance_similarity",
             _unit(self.appearance_similarity, "appearance_similarity"),
         )
         object.__setattr__(
-            self, "centroid_world_m", _position(self.centroid_world_m, "centroid_world_m")
+            self,
+            "centroid_world_m",
+            _position(self.centroid_world_m, "centroid_world_m"),
         )
         extent = _position(self.extent_world_m, "extent_world_m")
         if any(item <= 0.0 for item in extent):
@@ -247,7 +257,9 @@ class Observation(_Record):
         object.__setattr__(
             self, "displacement_m", _non_negative(self.displacement_m, "displacement_m")
         )
-        object.__setattr__(self, "rotation_deg", _non_negative(self.rotation_deg, "rotation_deg"))
+        object.__setattr__(
+            self, "rotation_deg", _non_negative(self.rotation_deg, "rotation_deg")
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -292,7 +304,9 @@ class Decision(_Record):
         for name in ("sequence_id", "track_id", "frame_id", "reason"):
             if not isinstance(getattr(self, name), str) or not getattr(self, name):
                 raise ValueError(f"{name} must be a non-empty string")
-        object.__setattr__(self, "timestamp_s", _non_negative(self.timestamp_s, "timestamp_s"))
+        object.__setattr__(
+            self, "timestamp_s", _non_negative(self.timestamp_s, "timestamp_s")
+        )
         if not isinstance(self.label, LabelClass):
             raise TypeError("label must be a LabelClass")
         if not isinstance(self.action, DecisionAction):
@@ -326,7 +340,9 @@ class MapUpdate(_Record):
             raise ValueError("sequence_id must be a non-empty string")
         if not isinstance(self.track_id, str) or not self.track_id:
             raise ValueError("track_id must be a non-empty string")
-        object.__setattr__(self, "timestamp_s", _non_negative(self.timestamp_s, "timestamp_s"))
+        object.__setattr__(
+            self, "timestamp_s", _non_negative(self.timestamp_s, "timestamp_s")
+        )
         if not isinstance(self.action, DecisionAction):
             raise TypeError("action must be a DecisionAction")
         if not isinstance(self.map_version, int) or isinstance(self.map_version, bool):
@@ -343,9 +359,9 @@ class MapUpdate(_Record):
             object.__setattr__(
                 self, "new_position_m", _position(self.new_position_m, "new_position_m")
             )
-        if self.action in (DecisionAction.COMMIT, DecisionAction.REVERT):
-            if self.new_position_m is None:
-                raise ValueError(f"{self.action.value} requires new_position_m")
+        needs_new = self.action in (DecisionAction.COMMIT, DecisionAction.REVERT)
+        if needs_new and self.new_position_m is None:
+            raise ValueError(f"{self.action.value} requires new_position_m")
 
 
 @dataclass(frozen=True, slots=True)
@@ -436,7 +452,11 @@ class RunManifest(_Record):
             raise ValueError("git_commit must have at least seven characters")
         for name in ("config_hash", "data_split_hash", "label_config_hash"):
             object.__setattr__(self, name, _hash(getattr(self, name), name))
-        if not isinstance(self.seed, int) or isinstance(self.seed, bool) or self.seed < 0:
+        if (
+            not isinstance(self.seed, int)
+            or isinstance(self.seed, bool)
+            or self.seed < 0
+        ):
             raise ValueError("seed must be a non-negative integer")
         if not isinstance(self.started_at_utc, datetime):
             raise TypeError("started_at_utc must be a datetime")
@@ -447,6 +467,8 @@ class RunManifest(_Record):
             raise ValueError("command must contain strings")
         object.__setattr__(self, "command", command)
         object.__setattr__(
-            self, "packages", {str(key): str(value) for key, value in self.packages.items()}
+            self,
+            "packages",
+            {str(key): str(value) for key, value in self.packages.items()},
         )
         object.__setattr__(self, "extra", dict(self.extra))

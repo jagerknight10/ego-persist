@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import os
 import platform
 import socket
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from egopersist.contracts import RunManifest
@@ -71,7 +70,7 @@ def build_run_manifest(
         data_split_hash=_sha256_file(split_file),
         label_config_hash=_sha256_file(label_config_path),
         seed=int(os.environ.get("EGOPERSIST_SEED", "0")),
-        started_at_utc=datetime.now(timezone.utc),
+        started_at_utc=datetime.now(UTC),
         hostname=socket.gethostname(),
         python_version=platform.python_version(),
         packages=packages,
