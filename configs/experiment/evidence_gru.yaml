@@ -1,0 +1,7 @@
+experiment: evidence_gru
+model: evidence_gru
+data: adt_v1
+seeds: [0, 1, 2]
+output_dir: ${oc.env:EGOPERSIST_RUN_ROOT,/runs}
+oracle_inputs: true
+freeze_labels: true

@@ -1,0 +1,30 @@
+version: 1
+keyframe_hz: 2.0
+
+change:
+  translation_m: 0.10
+  rotation_deg: 15.0
+
+persistent:
+  hold_s: 5.0
+  min_visible_keyframes: 5
+  mode_tolerance_m: 0.05
+  mode_tolerance_deg: 10.0
+
+transient:
+  return_window_s: 15.0
+  return_tolerance_m: 0.05
+  return_tolerance_deg: 10.0
+
+visibility:
+  min_mask_pixels: 200
+  min_depth_support: 0.35
+  co_visibility_threshold: 0.60
+
+state_machine:
+  suspect_probability: 0.50
+  commit_probability: 0.85
+  commit_min_visible_keyframes: 5
+  commit_min_span_s: 1.0
+  commit_min_co_visibility: 0.60
+  transient_probability: 0.80

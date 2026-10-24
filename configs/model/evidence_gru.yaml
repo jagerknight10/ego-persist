@@ -1,0 +1,15 @@
+version: 1
+input_dim: 20
+hidden_dim: 128
+num_layers: 2
+dropout: 0.10
+num_classes: 4
+class_weighting: balanced
+false_commit_weight: 3.0
+temporal_consistency_weight: 0.10
+learning_rate: 0.001
+batch_size: 32
+epochs: 100
+early_stop_patience: 10
+calibration: temperature
+seed: 0

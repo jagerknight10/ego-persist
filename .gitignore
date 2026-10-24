@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+.venv/
+
+# Data, caches, and model artifacts
+/data/
+raw/
+cache/
+artifacts/
+runs/
+logs/
+*.vrs
+*.csv.gz
+*.parquet
+*.pt
+*.pth
+*.ckpt
+*.onnx
+*.sif
+*.zip
+*.tar
+*.tar.gz
+
+# Secrets and licensed download manifests
+.env
+.env.*
+*.secret
+adt_urls*.txt
+*download_manifest*
+
+# Local tooling
+.DS_Store
+.idea/
+.vscode/
+tmp/
+scratch/
+
+# Parallel agent worktrees
+.worktrees/
