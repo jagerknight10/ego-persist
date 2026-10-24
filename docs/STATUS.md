@@ -81,28 +81,29 @@ Model: small GRU trained on rule-generated labels. False-commit weighted
 3x. Temperature calibration on validation data only. This is the only
 thing that trains.
 
-## 4. Current state
+## 4. Current state (2026-10-25)
 
-| Module | Branch | State |
-|---|---|---|
-| contracts | main | done, frozen |
-| data | feat/data | building now (real ADT reader) |
-| geometry | feat/geometry | not started (next) |
-| evidence | feat/evidence | not started |
-| evaluation | feat/evaluation | worker code exists, needs review |
-| demo | feat/demo | worker code exists, needs review |
-| infra | feat/infra | worker code exists, needs review |
+| Module | State |
+|---|---|
+| contracts | done, frozen |
+| data | merged: ADT reader, 2 Hz keyframes, label rules, splits, audit |
+| geometry | merged: transforms, projection, OBB, association |
+| evidence | merged: 20-d features, Bayes, EvidenceGRU, temperature calibration |
+| evaluation | merged: metrics, taxonomy, report, eval stage |
+| demo | merged: 3-scenario synthetic replay, HTML viewer, mug query CLI |
+| infra | merged: Slurm jobs, Apptainer, ADT JSON downloader, runbook |
 
-Parallel `codex exec` workers failed (token burn, no output). They are
-killed. The lead implements all modules directly.
+All modules are on `main` (`c1b9e30`). `ruff check` clean; 150 tests pass
+locally. The full pipeline (preprocess -> features -> train -> eval,
+bayes and model) was smoke-verified end to end on real ADT seq133
+(314 tracks, 47,828 observations).
 
-Local test asset: seq133 small files in `data/raw/adt/seq/` (~30 MB,
-checksum-verified). One Lite recognition sequence (video ~46 MB) will be
-added for RGB-based appearance features.
+Local test asset: seq133 ground truth + calibration in
+`data/raw/adt/seq133/` (~30 MB, checksum-verified).
 
-## 5. Action plan (gates)
+## 5. Action plan (gates, all passed 2026-10-25)
 
-Gate G1 - data module (now)
+Gate G1 - data module [DONE]
 - ADT manifest + sequence reader (real CSV/JSONL formats).
 - 2 Hz deterministic keyframe sampling.
 - Observation builder from 2D boxes + trajectories + extents.
@@ -110,22 +111,22 @@ Gate G1 - data module (now)
 - Split validation, audit report, data card.
 - PASS: pytest green on seq133; audit JSON valid.
 
-Gate G2 - geometry module
+Gate G2 - geometry module [DONE]
 - Transforms, back-projection, IoU, gated association, provisional
   tracks, causal state machine (commit/defer/reject/revert gates).
 - PASS: pytest green (round-trips, gates, occlusion defer, reversion).
 
-Gate G3 - evidence module
+Gate G3 - evidence module [DONE]
 - 20-d vector, scaler, Bayes accumulator, temporal-majority baseline,
   EvidenceGRU + train/infer CLIs (lazy torch), temperature calibration.
 - PASS: pytest green on CPU.
 
-Gate G4 - merge evaluation, demo, infra
+Gate G4 - merge evaluation, demo, infra [DONE]
 - Review worker code, fix, test, merge in order. Full suite green on
   main. Live demo run: 3 scenarios + mug query.
 - PASS: `pytest` + `ruff` green on main; demo output correct.
 
-Gate G5 - cluster package
+Gate G5 - cluster package [DONE locally, awaiting cluster run]
 - Download script (selected sequences + depth + segmentation + video).
 - Apptainer build, 4 Slurm stages, runbook with exact commands.
 - PASS: you run it, it works, results return here.
@@ -134,14 +135,10 @@ After G5 you decide: full training run or stop at the demo.
 
 ## 6. Doing now
 
-1. This document. Commit.
-2. `data` module in `.worktrees/data`, tests against seq133.
-3. Pick the local RGB test sequence (video < 100 MB). Download it.
-4. `geometry` module.
-5. `evidence` module.
-6. Review + merge evaluation, demo, infra.
-7. Integration + local demo.
-8. Cluster runbook + commands for you.
+1. Owner runs the cluster sequence from `docs/CLUSTER_RUNBOOK.md`
+   (clone v0.1.0, lock env, build container, download 12 sequences,
+   smoke, 4 stage submissions).
+2. Read the eval reports; decide: full training or stop at the demo.
 
 ## 7. Risks and open questions
 

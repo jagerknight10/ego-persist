@@ -1,5 +1,9 @@
 # ADT Access
 
+> Superseded 2026-10-25: the owner provided the official signed-link
+> manifest. See `docs/decisions/0002-adt-access.md`. ADT downloads are
+> now permitted.
+
 ## Rule
 
 ADT is licensed data. There is no legal workaround for the licence.
