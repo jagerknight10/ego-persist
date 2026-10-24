@@ -62,8 +62,14 @@ def run_preprocess(argv: Sequence[str]) -> int:
         path.name for path in data_root.iterdir() if path.is_dir()
     )
     validate_splits(splits, available)
-    train_ids = set(splits["train"].sequence_ids)
-    val_ids = set(splits["val"].sequence_ids)
+    from egopersist.data.splits import SplitSpec
+
+    train_spec = splits.get("train", SplitSpec("train", ()))
+    val_spec = splits.get("val", SplitSpec("val", ()))
+    if "train" not in splits:
+        raise SystemExit("split manifest has no 'train' split")
+    train_ids = set(train_spec.sequence_ids)
+    val_ids = set(val_spec.sequence_ids)
 
     hz = float(data_config.get("keyframe_hz", label_config.keyframe_hz))
     all_events: list[EventLabel] = []
