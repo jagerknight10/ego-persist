@@ -11,7 +11,9 @@ from egopersist.data import load_adt_sequence
 SEQ133 = Path(__file__).resolve().parents[1] / "data" / "raw" / "adt" / "seq133"
 
 
-@pytest.mark.skipif(not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present")
+@pytest.mark.skipif(
+    not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present"
+)
 def test_load_sequence_fields() -> None:
     seq = load_adt_sequence(SEQ133)
     assert seq.sequence_id == "seq133"
@@ -32,7 +34,9 @@ def test_load_sequence_fields() -> None:
     assert 0.0 < cy < 2000.0
 
 
-@pytest.mark.skipif(not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present")
+@pytest.mark.skipif(
+    not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present"
+)
 def test_missing_file_rejected(tmp_path: Path) -> None:
     partial = tmp_path / "partial"
     (partial / "main_groundtruth").mkdir(parents=True)

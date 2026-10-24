@@ -21,7 +21,7 @@ def test_round_trip_axis_camera():
     u, v = project_world_to_pixel(p_world, cam, PIN)
     depth = cam.inverse().apply(p_world)[2]
     p_back = backproject_world(u, v, depth, cam, PIN)
-    assert all(abs(a - b) < 1e-9 for a, b in zip(p_world, p_back))
+    assert all(abs(a - b) < 1e-9 for a, b in zip(p_world, p_back, strict=False))
 
 
 def test_round_trip_rotated_camera():
@@ -30,7 +30,7 @@ def test_round_trip_rotated_camera():
     p_world = transform_point(cam.t_m, cam.q_wxyz, p_cam)
     u, v = project_world_to_pixel(p_world, cam, PIN)
     p_back = backproject_world(u, v, p_cam[2], cam, PIN)
-    assert all(abs(a - b) < 1e-9 for a, b in zip(p_world, p_back))
+    assert all(abs(a - b) < 1e-9 for a, b in zip(p_world, p_back, strict=False))
 
 
 def test_invalid_depth_rejected():

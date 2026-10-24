@@ -7,7 +7,11 @@ from egopersist.contracts.core import (
     LabelClass,
     Observation,
 )
-from egopersist.mapping.state_machine import StateMachineConfig, TrackStateMachine, TrackView
+from egopersist.mapping.state_machine import (
+    StateMachineConfig,
+    TrackStateMachine,
+    TrackView,
+)
 
 CFG = StateMachineConfig()
 
@@ -38,10 +42,7 @@ def make_view(
     track_id="trk0001",
     orientation=(1.0, 0.0, 0.0, 0.0),
 ):
-    if centroid is None:
-        obs = None
-    else:
-        obs = make_obs(centroid, t, orientation=orientation)
+    obs = None if centroid is None else make_obs(centroid, t, orientation=orientation)
     return TrackView(
         sequence_id="seq1",
         track_id=track_id,
@@ -82,9 +83,11 @@ def test_small_deviation_is_kept_not_committed():
     for k in range(10):
         t = k * 0.5
         # 0.2 m away (exceeds 0.10 m) but evidence says stable
-        d, u = sm.update(make_view(t, (0.2, 0.0, 1.0), probs(p_stable=0.9, p_change=0.05)))
+        d, u = sm.update(
+            make_view(t, (0.2, 0.0, 1.0), probs(p_stable=0.9, p_change=0.05))
+        )
         seen.append((d, u))
-    for d, u in seen:
+    for _d, u in seen:
         assert u.action != DecisionAction.COMMIT
         assert u.map_version == 0
 
@@ -105,7 +108,9 @@ def test_commit_gate_requires_all_gates():
     assert d.action == DecisionAction.COMMIT
     assert u.map_version == 1
     assert u.new_position_m is not None
-    assert all(abs(a - b) < 1e-6 for a, b in zip(u.new_position_m, new_pose))
+    assert all(
+        abs(a - b) < 1e-6 for a, b in zip(u.new_position_m, new_pose, strict=False)
+    )
     assert d.label == LabelClass.PERSISTENT_CHANGE
 
 
@@ -198,7 +203,9 @@ def test_reversion_gate():
     d, u = sm.update(make_view(4.5, original, probs(p_stable=0.99)))
     assert d.action == DecisionAction.REVERT
     assert u.map_version == 2
-    assert all(abs(a - b) < 1e-9 for a, b in zip(u.new_position_m, original))
+    assert all(
+        abs(a - b) < 1e-9 for a, b in zip(u.new_position_m, original, strict=False)
+    )
 
 
 def test_rotation_deviation_opens_suspect():
@@ -215,19 +222,25 @@ def test_transient_object_lifecycle():
     sm = TrackStateMachine(CFG)
     pos = (0.0, 0.0, 1.0)
     # insufficient evidence first
-    d, u = sm.update(
-        make_view(0.0, pos, probs(p_transient=0.95), is_static=False)
-    )
+    d, u = sm.update(make_view(0.0, pos, probs(p_transient=0.95), is_static=False))
     assert d.action == DecisionAction.DEFER
     for k in range(1, 6):
-        d, u = sm.update(make_view(k * 0.5, pos, probs(p_transient=0.95, p_unknown=0.05), is_static=False))
+        d, u = sm.update(
+            make_view(
+                k * 0.5, pos, probs(p_transient=0.95, p_unknown=0.05), is_static=False
+            )
+        )
     assert d.label == LabelClass.TRANSIENT
     assert d.action == DecisionAction.KEEP
     # object leaves; within 15 s window -> keep
-    d, u = sm.update(make_view(3.0, None, probs(p_transient=0.95, p_unknown=0.05), is_static=False))
+    d, u = sm.update(
+        make_view(3.0, None, probs(p_transient=0.95, p_unknown=0.05), is_static=False)
+    )
     assert d.action == DecisionAction.KEEP
     # after the 15 s return window -> reject
-    d, u = sm.update(make_view(19.0, None, probs(p_transient=0.95, p_unknown=0.05), is_static=False))
+    d, u = sm.update(
+        make_view(19.0, None, probs(p_transient=0.95, p_unknown=0.05), is_static=False)
+    )
     assert d.action == DecisionAction.REJECT
 
 

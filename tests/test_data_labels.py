@@ -4,15 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
-import pytest
-
 from egopersist.contracts import EventType, LabelClass
 from egopersist.data import TrackSample, label_track, load_label_config
 
 CONFIG = Path(__file__).resolve().parents[1] / "configs" / "labels_v1.yaml"
 
 
-def _config() -> "object":
+def _config() -> object:
     return load_label_config(CONFIG)
 
 
@@ -27,7 +25,9 @@ def _sample(t: float, pose: tuple[float, float, float], dynamic: bool = False):
 
 
 def _hidden(t: float):
-    return TrackSample(timestamp_s=t, pose=None, orientation_wxyz=None, visible=False, dynamic=False)
+    return TrackSample(
+        timestamp_s=t, pose=None, orientation_wxyz=None, visible=False, dynamic=False
+    )
 
 
 def test_stable_track_labels_stable() -> None:
@@ -61,7 +61,9 @@ def test_durable_move_confirms_persistent_change() -> None:
     moved = [(1.5, 2.0, 3.0)] * 20  # 0.5 m jump, held for 10 s
     samples += [_sample(2.0 + t * 0.5, pose) for t, pose in enumerate(moved)]
     events, labels = label_track("s", "t", samples, config)
-    change = [event for event in events if event.event_type is EventType.PERSISTENT_CHANGE]
+    change = [
+        event for event in events if event.event_type is EventType.PERSISTENT_CHANGE
+    ]
     assert len(change) == 1
     assert labels.index(LabelClass.PERSISTENT_CHANGE) >= 4
     assert labels[-1] is LabelClass.PERSISTENT_CHANGE

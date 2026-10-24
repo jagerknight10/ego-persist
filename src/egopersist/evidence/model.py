@@ -7,10 +7,10 @@ inference run on the compute cluster; local runs never train.
 
 from __future__ import annotations
 
-import math
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import Any
 
 from egopersist.contracts import LabelClass
 from egopersist.evidence.features import FEATURE_NAMES, INPUT_DIM
@@ -62,7 +62,7 @@ def pack_track(
     values: list[float] = []
     indices: list[int] = []
     mask: list[bool] = []
-    for feat, label in zip(feature_rows, label_rows):
+    for feat, label in zip(feature_rows, label_rows, strict=False):
         if label is None:
             values.extend([0.0] * INPUT_DIM)
             indices.append(3)
@@ -78,7 +78,6 @@ def pack_track(
 
 def build_model(config: Mapping[str, Any]):
     """Construct the GRU classifier (requires torch)."""
-    import torch
     from torch import nn
 
     class EvidenceGRU(nn.Module):
@@ -91,9 +90,7 @@ def build_model(config: Mapping[str, Any]):
                 dropout=float(config["dropout"]),
                 batch_first=True,
             )
-            self.head = nn.Linear(
-                int(config["hidden_dim"]), int(config["num_classes"])
-            )
+            self.head = nn.Linear(int(config["hidden_dim"]), int(config["num_classes"]))
 
         def forward(self, x, h=None):  # x: [B, T, D]
             out, h = self.gru(x, h)
@@ -142,14 +139,18 @@ def evidence_loss(
         wrong = (targets != change_idx).float() * mask.float()
         predicted_change = torch.argmax(logits, dim=2) == change_idx
         penalty = (predicted_change.float() * wrong).sum()
-        total = total + false_commit_weight * penalty / mask.float().sum().clamp(min=1.0)
+        total = total + false_commit_weight * penalty / mask.float().sum().clamp(
+            min=1.0
+        )
 
     if temporal_weight:
         drift = torch.nn.functional.mse_loss(
             logits[:, 1:, :], logits[:, :-1, :], reduction="none"
         ).sum(dim=2)  # [B, T-1]
         drift = drift * mask[:, 1:].float()
-        total = total + temporal_weight * drift.sum() / mask[:, 1:].float().sum().clamp(min=1.0)
+        total = total + temporal_weight * drift.sum() / mask[:, 1:].float().sum().clamp(
+            min=1.0
+        )
     return total
 
 
@@ -168,13 +169,9 @@ def predict_probabilities(
         logits, _ = model(x)  # [1, T, C]
     out: list[dict[LabelClass, float]] = []
     for k in range(x.shape[1]):
-        probs = torch.softmax(
-            logits[0, k] / max(temperature, 1e-6), dim=0
-        )
-        values = {
-            label: float(probs[idx])
-            for label, idx in zip(CLASS_ORDER, range(4))
-        }
+        probs = torch.softmax(logits[0, k] / max(temperature, 1e-6), dim=0)
+        pairs = zip(CLASS_ORDER, range(4), strict=False)
+        values = {label: float(probs[idx]) for label, idx in pairs}
         out.append(values if bool(mask[k]) else _uniform())
     return out
 
@@ -226,7 +223,11 @@ def train_model(
                 y = bundle.labels.to(device)
                 m = bundle.masks.to(device)
                 for start in range(0, x.shape[0], batch):
-                    xb, yb, mb = x[start : start + batch], y[start : start + batch], m[start : start + batch]
+                    xb, yb, mb = (
+                        x[start : start + batch],
+                        y[start : start + batch],
+                        m[start : start + batch],
+                    )
                     logits, _ = model(xb)
                     loss = evidence_loss(
                         logits,

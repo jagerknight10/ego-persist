@@ -54,8 +54,10 @@ def test_single_match_and_new_track():
 
 def test_gate_rejects_far_observation():
     bank = TrackBank(confirm_hits=2)
-    bank.apply(bank.associate([make_obs(0, (0.0, 0.0, 2.0), 0.0)], 0.3),
-               [make_obs(0, (0.0, 0.0, 2.0), 0.0)])
+    bank.apply(
+        bank.associate([make_obs(0, (0.0, 0.0, 2.0), 0.0)], 0.3),
+        [make_obs(0, (0.0, 0.0, 2.0), 0.0)],
+    )
     # observation 1 m away: must not match, must start a new track
     far = make_obs(1, (1.0, 0.0, 2.0), 0.5)
     res = bank.associate([far], 0.3)
@@ -81,8 +83,10 @@ def test_two_to_two_assignment():
 
 def test_missing_tracks_detected():
     bank = TrackBank(confirm_hits=1)
-    bank.apply(bank.associate([make_obs(0, (0.0, 0.0, 2.0), 0.0)], 0.3),
-               [make_obs(0, (0.0, 0.0, 2.0), 0.0)])
+    bank.apply(
+        bank.associate([make_obs(0, (0.0, 0.0, 2.0), 0.0)], 0.3),
+        [make_obs(0, (0.0, 0.0, 2.0), 0.0)],
+    )
     # at its own keyframe time it is not missing
     assert bank.missing_tracks(0.0) == []
     # at the next keyframe, without a match, it is missing

@@ -1,142 +1,181 @@
 # EgoPersist Cluster Runbook
 
-Status: Template. Fill each placeholder before use.
+All heavy work runs on the university cluster. The laptop holds code and the
+synthetic demo only. Nothing over 100 MB is downloaded off-cluster.
 
-## 1. Values to Fill
+## 0. Layout contract
 
-| Name | Value |
-|---|---|
-| Cluster host | `<HOST>` |
-| Project root | `<PROJECT_ROOT>` |
-| Raw data root | `<DATA_ROOT>` |
-| Run root | `<RUN_ROOT>` |
-| Partition | `<GPU_PARTITION>` |
-| Account | `<ACCOUNT>` |
-| GPU type | `<GPU_TYPE>` |
-| GPU memory | `<GPU_MEMORY>` |
-| Container runtime | `<APPTAINER_OR_SINGULARITY>` |
-| Module commands | `<MODULES>` |
+One experiment uses one base run id (`EGOPERSIST_RUN_ID`).
 
-## 2. Rules
+| Stage | Run directory | Reads | Writes |
+|---|---|---|---|
+| preprocess | `$RUN_ROOT/$RUN_ID/preprocess/` | `$DATA_ROOT/<sequence>/` | observations, labels, audit |
+| features | `$RUN_ROOT/$RUN_ID/features/` | preprocess output | 20-dim features, Bayes probs |
+| train | `$RUN_ROOT/$RUN_ID_train_seed_$N/` | base run features | `train/seed_$N/model.pt` + `model_probs/` |
+| eval | `$RUN_ROOT/$RUN_ID_eval_bayes/` or `..._eval_model/` | base run + optional model run | report, decisions, provenance |
 
-1. Do not download data on the laptop.
-2. Do not commit the ADT manifest or any data.
-3. Keep raw data read-only.
-4. Use node-local scratch for staging.
-5. Copy results back to the run root.
-6. Record the Git commit in every run manifest.
+Set `EGOPERSIST_MODEL_RUN_ID` to evaluate a trained seed; leave it unset to
+evaluate the Bayes baseline (CPU, no torch needed at eval time).
 
-## 3. First-Time Setup
+## 1. First-time setup (login node)
 
 ```bash
-ssh <HOST>
+# 1. Code
 cd <PROJECT_ROOT>
-git clone <REPO_URL> code
-cd code
-git checkout <TAG_OR_COMMIT>
+git clone git@github.com:jagerknight10/ego-persist.git
+cd ego-persist
+git checkout v0.1.0
+
+# 2. Copy the signed ADT URL manifest into the data root (never into Git)
+mkdir -p "$DATA_ROOT/manifests"
+cp /path/to/Aria\ Digital\ Twin\ Dataset\ URLs.json "$DATA_ROOT/manifests/adt_urls.json"
+chmod 600 "$DATA_ROOT/manifests/adt_urls.json"
+
+# 3. Environment file
+cp environment/cluster.env.example "$HOME/egopersist-cluster.env"
+chmod 600 "$HOME/egopersist-cluster.env"
+$EDITOR "$HOME/egopersist-cluster.env"   # fill paths, partition, account, RUN_ID
+source "$HOME/egopersist-cluster.env"
 ```
 
-Create the container:
+## 2. Lock and image (needs network)
 
 ```bash
-apptainer build containers/egopersist.sif environment/apptainer.def
+bash scripts/lock_environment.sh        # needs uv 0.8.13 + python3.11
+git add uv.lock && git commit -m "chore: lock cluster environment"
+bash scripts/build_container.sh         # uses $EGOPERSIST_IMAGE
+apptainer test "$EGOPERSIST_IMAGE"
+bash scripts/check_cluster_env.sh
 ```
 
-Set the paths:
+## 3. Download the data subset (compute node)
+
+Only two asset types are needed (poses, boxes, calibration). Video, depth,
+and synthetic assets are not used by the pipeline.
+
+Smoke set (3 sequences, ~60 MB total):
 
 ```bash
-cat > .env.cluster <<'EOF'
-EGOPERSIST_DATA_ROOT=<DATA_ROOT>
-EGOPERSIST_RUN_ROOT=<RUN_ROOT>
-EOF
+srun --partition "$EGOPERSIST_SLURM_PARTITION" --cpus-per-task=4 --mem=16G --time=02:00:00 bash -c '
+  set -euo pipefail
+  cd "$EGOPERSIST_PROJECT_ROOT"
+  for seq in Apartment_release_clean_seq131_M1292 \
+             Apartment_release_clean_seq133_M1292 \
+             Apartment_release_meal_seq131_M1292; do
+    python3 scripts/download_adt_json.py \
+      --manifest "$EGOPERSIST_DATA_ROOT/manifests/adt_urls.json" \
+      --sequence "$seq" \
+      --types main_groundtruth,mps_slam_calibration \
+      --out "$EGOPERSIST_DATA_ROOT/sequences"
+  done
+'
 ```
 
-## 4. ADT Access
-
-1. Accept the ADT licence with the project account.
-2. Request the temporary download-link file.
-3. Put the file at `<DATA_ROOT>/manifests/adt_urls.txt`.
-4. Set owner-only permissions.
-5. Do not copy the file to Git.
-
-## 5. Sample Download
+Full training set (12 sequences, ~1 GB total). Activities are separated
+so train/val/test never share a scene. Run this from a login shell with
+the environment sourced; the wrapper is idempotent, so an interrupted
+loop can be re-run:
 
 ```bash
-bash scripts/download_adt_subset.sh \
-  --manifest <DATA_ROOT>/manifests/adt_urls.txt \
-  --sequence <SEQUENCE_ID> \
-  --types 0,6 \
-  --out <DATA_ROOT>/sample
+for seq in \
+  Apartment_release_clean_seq131_M1292 \
+  Apartment_release_clean_seq133_M1292 \
+  Apartment_release_clean_seq134_M1292 \
+  Apartment_release_meal_seq131_M1292 \
+  Apartment_release_meal_seq133_M1292 \
+  Apartment_release_meal_seq134_M1292 \
+  Apartment_release_decoration_seq131_M1292 \
+  Apartment_release_decoration_seq133_M1292 \
+  Apartment_release_decoration_seq134_M1292 \
+  Apartment_release_multiuser_cook_seq111_M1292 \
+  Apartment_release_multiuser_cook_seq112_M1292 \
+  Apartment_release_multiuser_cook_seq113_M1292; do
+  python3 "$EGOPERSIST_PROJECT_ROOT/scripts/download_adt_json.py" \
+    --manifest "$EGOPERSIST_DATA_ROOT/manifests/adt_urls.json" \
+    --sequence "$seq" \
+    --types main_groundtruth,mps_slam_calibration \
+    --out "$EGOPERSIST_DATA_ROOT/sequences"
+done
 ```
 
-## 6. Smoke Test
+Each asset is SHA-1 verified. The manifest lists all 236 sequences; the
+12 above are a balanced 4-activity subset (~1 GB).
+
+## 4. Split file
+
+Smoke split (3 sequences):
 
 ```bash
-srun apptainer exec --nv \
-  --bind <DATA_ROOT>:/data:ro,<RUN_ROOT>:/runs \
-  containers/egopersist.sif \
-  python -m pytest tests -q
+python3 scripts/create_split_manifest.py \
+  --sequence Apartment_release_clean_seq131_M1292 \
+  --sequence Apartment_release_clean_seq133_M1292 \
+  --sequence Apartment_release_meal_seq131_M1292 \
+  --seed 0 \
+  --output "$EGOPERSIST_DATA_ROOT/splits/adt_splits_v1.json"
 ```
 
-## 7. Label Audit
+Full split (12 sequences, 60/20/20): pass all 12 sequence IDs from
+section 3 to `--sequence` (one flag per sequence). At least 3 sequences
+are required.
+
+## 5. Smoke test (before any stage)
 
 ```bash
-sbatch jobs/preprocess.sbatch
+srun --partition "$EGOPERSIST_SLURM_PARTITION" --cpus-per-task=4 --mem=16G --time=00:15:00 \
+  bash "$EGOPERSIST_PROJECT_ROOT/scripts/smoke_cluster.sh"
 ```
 
-Check these outputs:
+It must print `Cluster smoke passed.`.
 
-```text
-<RUN_ROOT>/labels/<SPLIT_HASH>/labels.parquet
-<RUN_ROOT>/labels/<SPLIT_HASH>/audit.md
-```
-
-## 8. Feature Extraction
+## 6. Run the stages
 
 ```bash
-sbatch jobs/features.sbatch
+bash scripts/submit_stage.sh preprocess
+bash scripts/submit_stage.sh features
+bash scripts/submit_stage.sh train --array=0-2     # 3 seeds, 1 GPU each
+bash scripts/submit_stage.sh eval                   # Bayes baseline, CPU
+EGOPERSIST_MODEL_RUN_ID="${EGOPERSIST_RUN_ID}_train_seed_0" \
+  bash scripts/submit_stage.sh eval                 # trained model
 ```
 
-Check the feature cache and its manifest.
+Jobs are idempotent per run id. A failed stage can be resubmitted after a
+fix. Logs: `$EGOPERSIST_RUN_ROOT/slurm/<stage>_<job>.{out,err}`.
 
-## 9. Training
+## 7. Read the results
 
 ```bash
-sbatch --array=0-2 jobs/train.sbatch
+# Bayes baseline
+cat "$EGOPERSIST_RUN_ROOT/$EGOPERSIST_RUN_ID_eval_bayes/eval/evaluation_report.json"
+# Trained model
+cat "$EGOPERSIST_RUN_ROOT/$EGOPERSIST_RUN_ID_eval_model/eval/evaluation_report.json"
 ```
 
-Check these outputs:
+Key fields: `transient_false_commit`, `persistent_change_micro`,
+`commit_timing`, `final_position_error`, `pareto_point`. Check
+`provenance.json` (git commit, seed, container hash, config hashes) before
+comparing two runs.
 
-```text
-<RUN_ROOT>/<RUN_ID>/resolved_config.yaml
-<RUN_ROOT>/<RUN_ID>/provenance.json
-<RUN_ROOT>/<RUN_ID>/metrics.json
-<RUN_ROOT>/<RUN_ID>/checkpoint.pt
-```
-
-## 10. Evaluation
+Copy results to the laptop (reports only, never raw data):
 
 ```bash
-sbatch jobs/eval.sbatch
+rsync -av <HOST>:"$EGOPERSIST_RUN_ROOT/$EGOPERSIST_RUN_ID_eval_model/eval/" ./results/
 ```
 
-Check the Pareto plot and the error table.
-
-## 11. Copy Results
-
-```bash
-rsync -av <HOST>:<RUN_ROOT>/<RUN_ID>/ ./results/<RUN_ID>/
-```
-
-Do not copy raw data.
-
-## 12. Failure Checks
+## 8. Failure table
 
 | Symptom | Check |
 |---|---|
-| No GPU | `--gres` value and partition |
-| CUDA error | Container CUDA version and driver |
-| Missing data | Bind mounts and `DATA_ROOT` |
-| Slow reads | Stage the data to scratch |
-| Out of memory | Batch size and cache size |
-| Different scores | Seed, label hash, and Git commit |
+| No GPU | `--gres`, partition, `CUDA_VISIBLE_DEVICES` |
+| CUDA error | Container vs host driver CUDA version |
+| Missing data | `EGOPERSIST_DATA_ROOT/sequences/<seq>/` layout |
+| Env error | `bash scripts/check_cluster_env.sh` |
+| Download blocked | HTTPS URL, manifest path, disk space |
+| OOM | Sequence count, batch size |
+| Different scores | Seed, config hash, git commit, container hash |
+
+## Rules
+
+1. No data, checkpoints, manifests, or secrets in Git.
+2. Raw data stays in `$EGOPERSIST_DATA_ROOT`, read-only for jobs.
+3. `$EGOPERSIST_RUN_ROOT` must be outside both project and data roots.
+4. Do not present results as ADT results until the licence is confirmed.

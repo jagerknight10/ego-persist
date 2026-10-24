@@ -18,8 +18,8 @@ import argparse
 import json
 import os
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from egopersist.contracts import (
     Decision,
@@ -56,34 +56,38 @@ def _load_yaml(path: str) -> dict:
     return yaml.safe_load(Path(path).read_text())
 
 
-def _probability_source(
-    run_dir: Path, sequence_id: str
-) -> tuple[dict[str, dict[float, dict[str, float]]], str]:
-    """Return (track -> timestamp -> probs, source_name).
-
-    Prefers the trained model trace when a checkpoint exists; falls back
-    to the Bayes trace. The fallback keeps the eval stage runnable on
-    CPU with no torch.
-    """
-    trained = run_dir / "features" / sequence_id / "track_probabilities_model.jsonl"
-    if trained.exists():
-        out: dict[str, dict[float, dict[str, float]]] = {}
-        for line in _read_lines(trained):
-            row = json.loads(line)
-            out.setdefault(row["track_id"], {})[row["timestamp_s"]] = {
-                LabelClass(key): value
-                for key, value in row["probabilities"].items()
-            }
-        return out, "model"
-    out = {}
-    for line in _read_lines(
-        run_dir / "features" / sequence_id / "track_probabilities_bayes.jsonl"
-    ):
+def _load_probability_trace(path: Path) -> dict[str, dict[float, dict[str, float]]]:
+    out: dict[str, dict[float, dict[str, float]]] = {}
+    for line in _read_lines(path):
         row = json.loads(line)
         out.setdefault(row["track_id"], {})[row["timestamp_s"]] = {
             LabelClass(key): value for key, value in row["probabilities"].items()
         }
-    return out, "bayes"
+    return out
+
+
+def _probability_source(
+    data_dir: Path, run_root: Path, sequence_id: str, model_run_id: str
+) -> tuple[dict[str, dict[float, dict[str, float]]], str]:
+    """Return (track -> timestamp -> probs, source_name).
+
+    Order: trained model traces from the seed run named by
+    EGOPERSIST_MODEL_RUN_ID, then the Bayes trace from the base run.
+    The Bayes fallback keeps the eval stage runnable on CPU with no torch.
+    """
+    if model_run_id:
+        # The seed run is a sibling of the base run under the run root.
+        model_path = (
+            run_root
+            / model_run_id
+            / "model_probs"
+            / sequence_id
+            / "track_probabilities_model.jsonl"
+        )
+        if model_path.exists():
+            return _load_probability_trace(model_path), "model"
+    bayes_path = data_dir / "features" / sequence_id / "track_probabilities_bayes.jsonl"
+    return _load_probability_trace(bayes_path), "bayes"
 
 
 def run_eval(argv: Sequence[str]) -> int:
@@ -93,6 +97,10 @@ def run_eval(argv: Sequence[str]) -> int:
 
     run_root = Path(_env("EGOPERSIST_RUN_ROOT"))
     run_id = _env("EGOPERSIST_RUN_ID")
+    # Shared stage data (preprocess, features) lives in the base experiment
+    # run. Outputs go to this stage's own run directory.
+    base_run_id = os.environ.get("EGOPERSIST_BASE_RUN_ID", run_id)
+    data_dir = run_root / base_run_id
     run_dir = run_root / run_id
     project_root = _env("EGOPERSIST_PROJECT_ROOT")
     label_config_path = _env("EGOPERSIST_LABEL_CONFIG")
@@ -102,10 +110,14 @@ def run_eval(argv: Sequence[str]) -> int:
     labels_raw = _load_yaml(label_config_path)
     sm_config = StateMachineConfig.from_labels_yaml(labels_raw)
 
+    from egopersist.data.splits import normalize_split_raw
+
     splits_raw = json.loads(split_path.read_text())
+    splits_norm = normalize_split_raw(splits_raw)
     sequence_ids = sorted(
-        {item for key in ("train", "val") for item in splits_raw.get(key, [])}
+        set(splits_norm.get("train", [])) | set(splits_norm.get("val", []))
     )
+    model_run_id = os.environ.get("EGOPERSIST_MODEL_RUN_ID", "")
 
     decisions: list[Decision] = []
     updates: list[MapUpdate] = []
@@ -115,7 +127,7 @@ def run_eval(argv: Sequence[str]) -> int:
     for sequence_id in sequence_ids:
         obs_by_track: dict[str, list[Observation]] = {}
         for line in _read_lines(
-            run_dir / "preprocess" / sequence_id / "observations.jsonl"
+            data_dir / "preprocess" / sequence_id / "observations.jsonl"
         ):
             obs = Observation.from_json(line)
             obs_by_track.setdefault(obs.instance_id, []).append(obs)
@@ -125,11 +137,13 @@ def run_eval(argv: Sequence[str]) -> int:
         events.extend(
             EventLabel.from_json(line)
             for line in _read_lines(
-                run_dir / "preprocess" / sequence_id / "event_labels.jsonl"
+                data_dir / "preprocess" / sequence_id / "event_labels.jsonl"
             )
         )
 
-        probabilities, source = _probability_source(run_dir, sequence_id)
+        probabilities, source = _probability_source(
+            data_dir, run_root, sequence_id, model_run_id
+        )
         per_sequence_source[sequence_id] = source
 
         for track_id in sorted(obs_by_track):
@@ -143,7 +157,7 @@ def run_eval(argv: Sequence[str]) -> int:
                 (
                     json.loads(line)
                     for line in _read_lines(
-                        run_dir / "preprocess" / sequence_id / "track_meta.jsonl"
+                        data_dir / "preprocess" / sequence_id / "track_meta.jsonl"
                     )
                     if json.loads(line)["track_id"] == track_id
                 ),
@@ -162,9 +176,7 @@ def run_eval(argv: Sequence[str]) -> int:
                     observation=obs,
                     probabilities=probs,
                     committed_position_m=anchor,
-                    committed_orientation_wxyz=tuple(
-                        obs.orientation_wxyz
-                    ),
+                    committed_orientation_wxyz=tuple(obs.orientation_wxyz),
                     is_static=not dynamic,
                 )
                 decision, update = machine.update(view)
@@ -184,8 +196,7 @@ def run_eval(argv: Sequence[str]) -> int:
         json.dumps(report, indent=2, sort_keys=True, default=str) + "\n"
     )
     (out_dir / "decisions.jsonl").write_text(
-        "\n".join(d.to_json() for d in decisions)
-        + ("\n" if decisions else "")
+        "\n".join(d.to_json() for d in decisions) + ("\n" if decisions else "")
     )
     (out_dir / "map_updates.jsonl").write_text(
         "\n".join(u.to_json() for u in updates) + ("\n" if updates else "")
@@ -206,12 +217,10 @@ def run_eval(argv: Sequence[str]) -> int:
         },
     )
     (out_dir / "provenance.json").write_text(
-        json.dumps(manifest.to_dict(), indent=2, sort_keys=True, default=str)
-        + "\n"
+        json.dumps(manifest.to_dict(), indent=2, sort_keys=True, default=str) + "\n"
     )
     (out_dir / "RunManifest.json").write_text(
-        json.dumps(manifest.to_dict(), indent=2, sort_keys=True, default=str)
-        + "\n"
+        json.dumps(manifest.to_dict(), indent=2, sort_keys=True, default=str) + "\n"
     )
     print(
         json.dumps(

@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
 from egopersist.contracts import Decision, DecisionAction, EventLabel, MapUpdate
-
 from egopersist.evaluation.matching import (
     EventMatching,
     action_in_event,
@@ -144,8 +143,7 @@ def classify_errors(
                     track_id=event.track_id,
                     timestamp_s=None,
                     detail=(
-                        f"no commit in event window "
-                        f"[{event.start_s}, {event.end_s}] s"
+                        f"no commit in event window [{event.start_s}, {event.end_s}] s"
                     ),
                 )
             )

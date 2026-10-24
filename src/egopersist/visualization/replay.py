@@ -143,7 +143,9 @@ class ReplayObservation:
         if any(item <= 0.0 for item in extent):
             raise ReplaySchemaError("extent_m values must be positive")
         object.__setattr__(self, "extent_m", extent)
-        object.__setattr__(self, "confidence", _ratio(self.confidence, name="confidence"))
+        object.__setattr__(
+            self, "confidence", _ratio(self.confidence, name="confidence")
+        )
         if not isinstance(self.human_caused, bool):
             raise ReplaySchemaError("human_caused must be a boolean")
 
@@ -365,7 +367,9 @@ class ReplayDecision:
             raise ReplaySchemaError("instant_label must be a LabelClass")
         if not isinstance(self.instant_action, DecisionAction):
             raise ReplaySchemaError("instant_action must be a DecisionAction")
-        object.__setattr__(self, "confidence", _ratio(self.confidence, name="confidence"))
+        object.__setattr__(
+            self, "confidence", _ratio(self.confidence, name="confidence")
+        )
         object.__setattr__(
             self,
             "instant_confidence",
@@ -532,9 +536,7 @@ class ReplayFrame:
         ):
             if not isinstance(getattr(self, name), tuple):
                 raise ReplaySchemaError(f"{name} must be a tuple")
-        if not all(
-            isinstance(item, ReplayObservation) for item in self.observations
-        ):
+        if not all(isinstance(item, ReplayObservation) for item in self.observations):
             raise ReplaySchemaError("observations must contain ReplayObservation")
         for name in ("ego_map", "instant_map"):
             entries = getattr(self, name)

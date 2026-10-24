@@ -1,0 +1,44 @@
+Bootstrap: docker
+From: python:3.11.14-slim-bookworm
+
+%help
+    EgoPersist runtime container.
+    Build only from a clean checkout with a committed uv.lock file.
+
+%files
+    pyproject.toml /opt/egopersist/pyproject.toml
+    uv.lock /opt/egopersist/uv.lock
+    src /opt/egopersist/src
+    configs /opt/egopersist/configs
+    tests /opt/egopersist/tests
+    environment/uv-version.txt /opt/egopersist/environment/uv-version.txt
+
+%post
+    #!/bin/bash
+    set -euo pipefail
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get update
+    apt-get install --yes --no-install-recommends ca-certificates git libgomp1
+    rm -rf /var/lib/apt/lists/*
+    cd /opt/egopersist
+    uv_version="$(tr -d '[:space:]' < environment/uv-version.txt)"
+    python -m pip install --no-cache-dir "uv==${uv_version}"
+    uv sync --frozen --extra train --extra demo --extra dev
+    ./.venv/bin/python -c "import egopersist; import numpy; import yaml"
+    umask 022
+    chmod -R a+rX /opt/egopersist
+    rm -rf /root/.cache/uv
+
+%environment
+    export PATH=/opt/egopersist/.venv/bin:/usr/local/bin:/usr/bin:/bin
+    export PYTHONPATH=/opt/egopersist/src
+    export PYTHONDONTWRITEBYTECODE=1
+
+%runscript
+    exec egopersist "$@"
+
+%test
+    #!/bin/bash
+    set -euo pipefail
+    cd /opt/egopersist
+    python -m pytest tests -q

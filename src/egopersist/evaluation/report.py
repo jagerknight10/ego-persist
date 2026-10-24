@@ -3,11 +3,11 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable, Mapping
 from pathlib import Path
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 from egopersist.contracts import Decision, EventLabel, MapUpdate
-
 from egopersist.evaluation.matching import EventMatching, match_events
 from egopersist.evaluation.metrics import (
     commit_timing,
@@ -77,9 +77,7 @@ def evaluation_report(
         ).to_dict(),
         "persistent_change_by_sequence": [
             record.to_dict()
-            for record in persistent_change_metrics_by_sequence(
-                event_list, action_list
-            )
+            for record in persistent_change_metrics_by_sequence(event_list, action_list)
         ],
         "transient_false_commit": false_commits.to_dict(),
         "unknown_false_removal": unknown_false_removal_rate(

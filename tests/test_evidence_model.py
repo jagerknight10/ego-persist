@@ -17,6 +17,7 @@ from egopersist.evidence.model import (
     pack_track,
 )
 
+
 def test_class_index_covers_all_labels() -> None:
     assert [class_index(label) for label in CLASS_ORDER] == [0, 1, 2, 3]
     assert len(CLASS_ORDER) == 4
@@ -56,7 +57,9 @@ def test_balanced_weights_empty() -> None:
 
 
 def test_load_model_config(tmp_path: Path) -> None:
-    config_path = Path(__file__).resolve().parents[1] / "configs" / "model" / "evidence_gru.yaml"
+    config_path = (
+        Path(__file__).resolve().parents[1] / "configs" / "model" / "evidence_gru.yaml"
+    )
     config = load_model_config(config_path)
     assert config["input_dim"] == 20
     assert config["num_classes"] == 4
@@ -97,9 +100,7 @@ def test_baselines_deterministic() -> None:
     assert baselines.baseline_predict(_values(), False) is LabelClass.STABLE
     assert baselines.baseline_predict(_values(), True) is LabelClass.TRANSIENT
     assert (
-        baselines.baseline_predict(
-            _values(ratio_to_change_threshold=1.0), False
-        )
+        baselines.baseline_predict(_values(ratio_to_change_threshold=1.0), False)
         is LabelClass.PERSISTENT_CHANGE
     )
     assert (
@@ -107,13 +108,9 @@ def test_baselines_deterministic() -> None:
         is LabelClass.UNKNOWN
     )
     history = [LabelClass.STABLE, LabelClass.STABLE, LabelClass.STABLE]
+    assert baselines.majority_label(history, LabelClass.UNKNOWN) is LabelClass.STABLE
     assert (
-        baselines.majority_label(history, LabelClass.UNKNOWN)
-        is LabelClass.STABLE
-    )
-    assert (
-        baselines.majority_label(history[:2], LabelClass.STABLE)
-        is LabelClass.STABLE
+        baselines.majority_label(history[:2], LabelClass.STABLE) is LabelClass.STABLE
     )  # below min_history -> current
 
 
@@ -122,21 +119,18 @@ def test_gru_forward_and_loss_finite() -> None:
     from egopersist.evidence.model import build_model, evidence_loss, load_model_config
 
     config = load_model_config(
-        Path(__file__).resolve().parents[1]
-        / "configs"
-        / "model"
-        / "evidence_gru.yaml"
+        Path(__file__).resolve().parents[1] / "configs" / "model" / "evidence_gru.yaml"
     )
     model = build_model(config)
     x = torch.randn(4, 6, INPUT_DIM)
     logits, h = model(x)
     assert logits.shape == (4, 6, 4)
-    y = torch.tensor([[0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 2],
-                      [2, 2, 2, 2, 2, 3], [3, 3, 3, 3, 3, 0]])
+    y = torch.tensor(
+        [[0, 0, 0, 0, 0, 1], [1, 1, 1, 1, 1, 2], [2, 2, 2, 2, 2, 3], [3, 3, 3, 3, 3, 0]]
+    )
     m = torch.ones(4, 6, dtype=torch.bool)
     m[0, -1] = False
     w = torch.tensor([1.0, 1.0, 1.0, 1.0])
     loss = evidence_loss(logits, y, w, m, 3.0, 0.1)
     value = float(loss.detach())
     assert value == value and value >= 0.0  # finite
-

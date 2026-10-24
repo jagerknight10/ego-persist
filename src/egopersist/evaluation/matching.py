@@ -2,11 +2,16 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable
 
-from egopersist.contracts import Decision, DecisionAction, EventLabel, EventType
-
+from egopersist.contracts import (
+    Decision,
+    DecisionAction,
+    EventLabel,
+    EventType,
+    MapUpdate,
+)
 from egopersist.evaluation.models import ActionEvent
 
 _EXPECTED_ACTION: dict[EventType, DecisionAction] = {
@@ -54,9 +59,7 @@ def normalize_actions(
 ) -> tuple[ActionEvent, ...]:
     """Convert decisions, map updates, and action events to action events."""
     normalized = [
-        action
-        if isinstance(action, ActionEvent)
-        else ActionEvent.from_record(action)
+        action if isinstance(action, ActionEvent) else ActionEvent.from_record(action)
         for action in actions
     ]
     return tuple(sorted(normalized, key=_action_sort_key))
@@ -95,9 +98,7 @@ class EventMatching:
         """Return a JSON-compatible dictionary."""
         return {
             "matched": [match.to_dict() for match in self.matches],
-            "unmatched_events": [
-                event.to_dict() for event in self.unmatched_events
-            ],
+            "unmatched_events": [event.to_dict() for event in self.unmatched_events],
             "unmatched_actions": [
                 action.to_dict() for action in self.unmatched_actions
             ],

@@ -7,7 +7,13 @@ from pathlib import Path
 import pytest
 
 from egopersist.contracts import EventLabel, EventType, LabelClass
-from egopersist.data import SplitSpec, build_audit, load_splits, validate_splits, write_audit
+from egopersist.data import (
+    SplitSpec,
+    build_audit,
+    load_splits,
+    validate_splits,
+    write_audit,
+)
 
 
 def test_split_overlap_rejected() -> None:

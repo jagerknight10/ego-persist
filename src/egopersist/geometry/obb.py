@@ -78,7 +78,12 @@ class OBB:
         return planes
 
     def volume_m3(self) -> float:
-        return 8.0 * self.half_extents_m[0] * self.half_extents_m[1] * self.half_extents_m[2]
+        return (
+            8.0
+            * self.half_extents_m[0]
+            * self.half_extents_m[1]
+            * self.half_extents_m[2]
+        )
 
 
 def _dedupe(points: np.ndarray) -> np.ndarray:
@@ -98,7 +103,9 @@ def _box_edges(corners: np.ndarray) -> list[tuple[int, int]]:
     return edges
 
 
-def _inside_planes(points: np.ndarray, planes: list[tuple[np.ndarray, float]]) -> np.ndarray:
+def _inside_planes(
+    points: np.ndarray, planes: list[tuple[np.ndarray, float]]
+) -> np.ndarray:
     """Keep points inside every half-space (with tolerance)."""
     if points.shape[0] == 0:
         return points

@@ -16,12 +16,12 @@ import argparse
 import json
 import os
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Sequence
 
 from egopersist.contracts import EventLabel
 from egopersist.data.adt import load_adt_sequence
-from egopersist.data.audit import build_audit, write_audit
+from egopersist.data.audit import build_audit
 from egopersist.data.keyframes import build_observations, keyframe_times
 from egopersist.data.label_rules import TrackSample, label_track, load_label_config
 from egopersist.data.splits import load_splits, validate_splits
@@ -46,7 +46,7 @@ def _load_data_config(path: str) -> dict:
 def run_preprocess(argv: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(prog="egopersist.data.cli")
     parser.add_argument("--stage", required=True, choices=["preprocess"])
-    args = parser.parse_args(list(argv))
+    parser.parse_args(list(argv))
 
     data_root = Path(_env("EGOPERSIST_DATA_ROOT"))
     data_config = _load_data_config(_env("EGOPERSIST_DATA_CONFIG"))
@@ -58,9 +58,7 @@ def run_preprocess(argv: Sequence[str]) -> int:
 
     split_path = Path(_env("EGOPERSIST_SPLIT_FILE"))
     splits = load_splits(split_path)
-    available = sorted(
-        path.name for path in data_root.iterdir() if path.is_dir()
-    )
+    available = sorted(path.name for path in data_root.iterdir() if path.is_dir())
     validate_splits(splits, available)
     from egopersist.data.splits import SplitSpec
 
@@ -70,6 +68,12 @@ def run_preprocess(argv: Sequence[str]) -> int:
         raise SystemExit("split manifest has no 'train' split")
     train_ids = set(train_spec.sequence_ids)
     val_ids = set(val_spec.sequence_ids)
+    missing = sorted((train_ids | val_ids) - set(available))
+    if missing:
+        raise SystemExit(
+            "split references sequences that are absent from the data root: "
+            + ", ".join(missing)
+        )
 
     hz = float(data_config.get("keyframe_hz", label_config.keyframe_hz))
     all_events: list[EventLabel] = []
@@ -159,10 +163,19 @@ def run_preprocess(argv: Sequence[str]) -> int:
         audit_rows.append(audit)
 
     (run_dir / "preprocess" / "audit.json").write_text(
-        json.dumps({"schema": "egopersist.data.audit_set/1", "audits": audit_rows}, indent=2, sort_keys=True) + "\n"
+        json.dumps(
+            {"schema": "egopersist.data.audit_set/1", "audits": audit_rows},
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n"
     )
     (run_dir / "preprocess" / "split_manifest.json").write_text(
-        json.dumps({name: list(spec.sequence_ids) for name, spec in sorted(splits.items())}, indent=2) + "\n"
+        json.dumps(
+            {name: list(spec.sequence_ids) for name, spec in sorted(splits.items())},
+            indent=2,
+        )
+        + "\n"
     )
     total_events = sum(sum(audit["event_counts"].values()) for audit in audit_rows)
     print(

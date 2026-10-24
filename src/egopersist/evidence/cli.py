@@ -18,8 +18,9 @@ import argparse
 import json
 import os
 import sys
+from collections.abc import Sequence
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any
 
 from egopersist.contracts import LabelClass, Observation, TrackObservation
 from egopersist.evidence.bayes import BayesAccumulator
@@ -41,6 +42,41 @@ def _load_yaml(path: str) -> dict:
     import yaml
 
     return yaml.safe_load(Path(path).read_text())
+
+
+def _split_ids(path: Path, name: str) -> list[str]:
+    """Return the sequence list for one split, alias-tolerant."""
+    from egopersist.data.splits import normalize_split_raw
+
+    raw = json.loads(Path(path).read_text())
+    return normalize_split_raw(raw).get(name, [])
+
+
+def _tracks_from(seq_dir: Path) -> dict[str, list[dict]]:
+    """Group cached feature rows by track, in file order."""
+    out: dict[str, list[dict]] = {}
+    for line in _read_lines(seq_dir / "track_features.jsonl"):
+        row = json.loads(line)
+        out.setdefault(row["track_id"], []).append(row)
+    return out
+
+
+def _track_labels_from(seq_dir: Path) -> dict[str, list[str]]:
+    """Group cached label rows by track, in file order."""
+    out: dict[str, list[str]] = {}
+    for line in _read_lines(seq_dir / "track_labels.jsonl"):
+        row = json.loads(line)
+        out.setdefault(row["track_id"], []).append(row["label"])
+    return out
+
+
+def _stage_run_id() -> str:
+    """Cluster run id: stage name, with the seed for train arrays."""
+    seed = os.environ.get("EGOPERSIST_SEED", "")
+    stage = _stage_from_argv()
+    if stage == "train" and seed:
+        return f"train_seed_{seed}"
+    return stage
 
 
 def _read_lines(path: Path) -> list[str]:
@@ -69,9 +105,7 @@ def _iter_preprocessed(run_dir: Path, sequence_ids: list[str]):
         labels: dict[str, list[LabelClass]] = {}
         for line in _read_lines(seq_dir / "track_labels.jsonl"):
             row = json.loads(line)
-            labels[row["track_id"]] = [
-                LabelClass(item) for item in row["labels"]
-            ]
+            labels[row["track_id"]] = [LabelClass(item) for item in row["labels"]]
         meta: dict[str, str] = {}
         for line in _read_lines(seq_dir / "track_meta.jsonl"):
             row = json.loads(line)
@@ -82,12 +116,14 @@ def _iter_preprocessed(run_dir: Path, sequence_ids: list[str]):
 def run_features(argv: Sequence[str]) -> int:
     parser = argparse.ArgumentParser(prog="egopersist.evidence.cli")
     parser.add_argument("--stage", required=True, choices=["features", "train"])
-    args = parser.parse_args(list(argv))
+    parser.parse_args(list(argv))
 
-    run_dir = Path(_env("EGOPERSIST_RUN_ROOT")) / _env("EGOPERSIST_RUN_ID")
-    splits_raw = json.loads(Path(_env("EGOPERSIST_SPLIT_FILE")).read_text())
+    run_root = Path(_env("EGOPERSIST_RUN_ROOT"))
+    run_id = os.environ.get("EGOPERSIST_RUN_ID", "") or _stage_run_id()
+    run_dir = run_root / run_id
+    splits_path = Path(_env("EGOPERSIST_SPLIT_FILE"))
     sequence_ids = sorted(
-        {item for key in ("train", "val") for item in splits_raw.get(key, [])}
+        set(_split_ids(splits_path, "train")) | set(_split_ids(splits_path, "val"))
     )
     out_dir = run_dir / "features"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -141,8 +177,7 @@ def run_features(argv: Sequence[str]) -> int:
                             "track_id": track_id,
                             "timestamp_s": obs.timestamp_s,
                             "probabilities": {
-                                key.value: value
-                                for key, value in probs.items()
+                                key.value: value for key, value in probs.items()
                             },
                         },
                         sort_keys=True,
@@ -178,7 +213,7 @@ def run_features(argv: Sequence[str]) -> int:
         json.dumps(
             {
                 "stage": "features",
-                "run_id": _env("EGOPERSIST_RUN_ID"),
+                "run_id": run_id,
                 "input_dim": INPUT_DIM,
                 "tracks": n_tracks,
                 "steps": n_steps,
@@ -188,13 +223,11 @@ def run_features(argv: Sequence[str]) -> int:
     return 0
 
 
-def _load_bundle(
-    run_dir: Path, sequence_ids: list[str], split: str
-) -> "Any | None":
+def _load_bundle(run_dir: Path, sequence_ids: list[str], split: str) -> Any | None:
     """Pack one split into a TrainBundle (torch tensors)."""
     import torch
 
-    from egopersist.evidence.model import CLASS_ORDER, TrainBundle, class_index
+    from egopersist.evidence.model import TrainBundle, class_index
 
     feats: list[list[float]] = []
     labs: list[list[int]] = []
@@ -202,20 +235,13 @@ def _load_bundle(
     tids: list[str] = []
     for sequence_id in sequence_ids:
         seq_dir = run_dir / "features" / sequence_id
-        features_by_track: dict[str, list[dict]] = {}
-        for line in _read_lines(seq_dir / "track_features.jsonl"):
-            row = json.loads(line)
-            features_by_track.setdefault(row["track_id"], []).append(row)
-        labels_by_track: dict[str, list[int]] = {}
-        for line in _read_lines(seq_dir / "track_labels.jsonl"):
-            row = json.loads(line)
-            labels_by_track.setdefault(row["track_id"], []).append(
-                class_index(LabelClass(row["label"]))
-            )
+        features_by_track = _tracks_from(seq_dir)
+        labels_by_track = {
+            track_id: [class_index(LabelClass(item)) for item in items]
+            for track_id, items in _track_labels_from(seq_dir).items()
+        }
         for track_id in sorted(features_by_track):
-            items = sorted(
-                features_by_track[track_id], key=lambda r: r["timestamp_s"]
-            )
+            items = sorted(features_by_track[track_id], key=lambda r: r["timestamp_s"])
             labels = labels_by_track.get(track_id, [])
             n = min(len(items), len(labels))
             if n == 0:
@@ -228,9 +254,11 @@ def _load_bundle(
         return None
     max_len = max(len(row) for row in feats)
     X = torch.zeros(len(feats), max_len, INPUT_DIM)
-    Y = torch.full((len(feats), max_len), class_index(LabelClass.UNKNOWN), dtype=torch.int64)
+    Y = torch.full(
+        (len(feats), max_len), class_index(LabelClass.UNKNOWN), dtype=torch.int64
+    )
     M = torch.zeros(len(feats), max_len, dtype=torch.bool)
-    for i, (row, labels, mask) in enumerate(zip(feats, labs, masks)):
+    for i, (row, labels, mask) in enumerate(zip(feats, labs, masks, strict=False)):
         X[i, : len(row)] = torch.tensor(row)
         Y[i, : len(labels)] = torch.tensor(labels)
         M[i, : len(mask)] = torch.tensor(mask)
@@ -254,18 +282,21 @@ def run_train(argv: Sequence[str]) -> int:
     except ImportError as exc:
         raise SystemExit("train stage requires torch (run on the cluster)") from exc
 
-    from egopersist.evidence.model import load_model_config, train_model
+    from egopersist.evidence.model import train_model
 
-    run_dir = Path(_env("EGOPERSIST_RUN_ROOT")) / _env("EGOPERSIST_RUN_ID")
+    run_root = Path(_env("EGOPERSIST_RUN_ROOT"))
+    run_id = os.environ.get("EGOPERSIST_RUN_ID", "") or _stage_run_id()
+    run_dir = run_root / run_id
+    # Feature cache lives in the base experiment run, shared by all seeds.
+    base_run_id = os.environ.get("EGOPERSIST_BASE_RUN_ID", run_id)
+    base_dir = run_root / base_run_id
     model_config = _load_yaml(_env("EGOPERSIST_MODEL_CONFIG"))
     seed = int(os.environ.get("EGOPERSIST_SEED", "0"))
-    splits_raw = json.loads(Path(_env("EGOPERSIST_SPLIT_FILE")).read_text())
+    splits_path = Path(_env("EGOPERSIST_SPLIT_FILE"))
 
     bundles = []
     for split in ("train", "val"):
-        bundle = _load_bundle(
-            run_dir, splits_raw.get(split, []), split
-        )
+        bundle = _load_bundle(base_dir, _split_ids(splits_path, split), split)
         if bundle is not None:
             bundles.append(bundle)
     if not bundles:
@@ -273,11 +304,113 @@ def run_train(argv: Sequence[str]) -> int:
 
     out_dir = run_dir / "train" / f"seed_{seed}"
     train_model(bundles, model_config, out_dir, seed)
+
+    if os.environ.get("EGOPERSIST_MODEL_STAGE") == "1":
+        import torch
+
+        from egopersist.contracts import LabelClass
+        from egopersist.evidence.calibrate import fit_temperature
+        from egopersist.evidence.model import (
+            build_model,
+            class_index,
+            predict_probabilities,
+        )
+
+        model = build_model(model_config)
+        state = torch.load(out_dir / "model.pt", map_location="cpu", weights_only=True)
+        model.load_state_dict(state)
+
+        # Temperature scaling fitted on the validation split only.
+        val_sequences = (
+            _split_ids(splits_path, "val") or _split_ids(splits_path, "train")[:1]
+        )
+        val_logits: list[list[float]] = []
+        val_targets: list[int] = []
+        temperature = 1.0
+        for sequence_id in val_sequences:
+            seq_dir = base_dir / "features" / sequence_id
+            features_by_track = _tracks_from(seq_dir)
+            labels_by_track = _track_labels_from(seq_dir)
+            for track_id, rows in sorted(features_by_track.items()):
+                labels = labels_by_track.get(track_id, [])
+                n = min(len(rows), len(labels))
+                if n < 2:
+                    continue
+                x = torch.tensor(
+                    [row["values"] for row in rows[:n]], dtype=torch.float32
+                )
+                logits, _ = model(x.unsqueeze(0))
+                for k in range(n):
+                    val_logits.append(logits[0, k].tolist())
+                    val_targets.append(class_index(LabelClass(labels[k])))
+        if val_logits:
+            temperature = fit_temperature(val_logits, val_targets)
+        (out_dir / "calibration.json").write_text(
+            json.dumps(
+                {
+                    "stage": "model",
+                    "temperature": temperature,
+                    "val_n": len(val_logits),
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+
+        # Model probability traces for the eval stage. Written under this
+        # seed run: model_probs/<sequence_id>/track_probabilities_model.jsonl.
+        # The eval stage takes EGOPERSIST_MODEL_RUN_ID to select a seed.
+        probs_root = run_dir / "model_probs"
+        for split_name in ("train", "val"):
+            for sequence_id in _split_ids(splits_path, split_name):
+                seq_dir = base_dir / "features" / sequence_id
+                lines: list[str] = []
+                for track_id, rows in sorted(_tracks_from(seq_dir).items()):
+                    if not rows:
+                        continue
+                    x = torch.tensor(
+                        [row["values"] for row in rows], dtype=torch.float32
+                    )
+                    mask = torch.ones(len(rows), dtype=torch.bool)
+                    probs = predict_probabilities(
+                        model, x.unsqueeze(0), mask, temperature
+                    )
+                    for row, prob_map in zip(rows, probs, strict=False):
+                        lines.append(
+                            json.dumps(
+                                {
+                                    "track_id": track_id,
+                                    "timestamp_s": row["timestamp_s"],
+                                    "probabilities": {
+                                        label.value: float(value)
+                                        for label, value in prob_map.items()
+                                    },
+                                },
+                                sort_keys=True,
+                            )
+                        )
+                target = probs_root / sequence_id
+                target.mkdir(parents=True, exist_ok=True)
+                (target / "track_probabilities_model.jsonl").write_text(
+                    "\n".join(lines) + ("\n" if lines else "")
+                )
+        (out_dir / "model_stage.json").write_text(
+            json.dumps(
+                {
+                    "stage": "model",
+                    "run_id": run_id,
+                    "temperature": temperature,
+                },
+                sort_keys=True,
+            )
+            + "\n"
+        )
+
     print(
         json.dumps(
             {
                 "stage": "train",
-                "run_id": _env("EGOPERSIST_RUN_ID"),
+                "run_id": run_id,
                 "seed": seed,
                 "out": str(out_dir),
             }
@@ -286,14 +419,19 @@ def run_train(argv: Sequence[str]) -> int:
     return 0
 
 
+def _stage_from_argv(argv: Sequence[str] | None = None) -> str:
+    tokens = list(sys.argv[1:] if argv is None else argv)
+    for i, token in enumerate(tokens):
+        if token == "--stage" and i + 1 < len(tokens):
+            return tokens[i + 1]
+        if token.startswith("--stage="):
+            return token.split("=", 1)[1]
+    return "features"
+
+
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
-    stage = "features"
-    for i, token in enumerate(argv):
-        if token == "--stage" and i + 1 < len(argv):
-            stage = argv[i + 1]
-        elif token.startswith("--stage="):
-            stage = token.split("=", 1)[1]
+    stage = _stage_from_argv(argv)
     if stage == "features":
         return run_features(argv)
     if stage == "train":

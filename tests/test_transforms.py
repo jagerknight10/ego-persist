@@ -26,11 +26,13 @@ def test_transform_point_round_trip():
     p_world = transform_point(t, q, p_cam)
     t_back, q_back = inverse_transform(t, q)
     p_back = transform_point(t_back, q_back, p_world)
-    assert all(abs(a - b) < 1e-12 for a, b in zip(p_cam, p_back))
+    assert all(abs(a - b) < 1e-12 for a, b in zip(p_cam, p_back, strict=False))
     # world origin expressed in the camera frame is -R^-1 t
     origin_in_cam = transform_point(t_back, q_back, (0.0, 0.0, 0.0))
     expected = tuple(-v for v in quat_rotate(quat_conjugate(q), t))
-    assert all(abs(a - b) < 1e-12 for a, b in zip(origin_in_cam, expected))
+    assert all(
+        abs(a - b) < 1e-12 for a, b in zip(origin_in_cam, expected, strict=False)
+    )
 
 
 def test_identity_transform():
@@ -44,8 +46,8 @@ def test_inverse_transform_round_trip():
     q = quat_normalize((1.0, 2.0, -3.0, 0.5))
     t_cam, q_cam = inverse_transform(t, q)
     t2, q2 = inverse_transform(t_cam, q_cam)
-    assert all(abs(a - b) < 1e-12 for a, b in zip(t, t2))
-    dot = abs(sum(a * b for a, b in zip(q, q2)))
+    assert all(abs(a - b) < 1e-12 for a, b in zip(t, t2, strict=False))
+    dot = abs(sum(a * b for a, b in zip(q, q2, strict=False)))
     assert dot > 1.0 - 1e-12
 
 
@@ -76,7 +78,7 @@ def test_project_and_backproject_round_trip():
     p_cam = (0.5, -0.25, 2.0)
     u, v = project(p_cam, pin)
     p_back = backproject(u, v, 2.0, pin)
-    assert all(abs(a - b) < 1e-9 for a, b in zip(p_cam, p_back))
+    assert all(abs(a - b) < 1e-9 for a, b in zip(p_cam, p_back, strict=False))
 
 
 def test_project_rejects_behind_camera():
@@ -112,10 +114,12 @@ def test_rigid_compose_and_inverse():
     p_b = (0.3, -0.4, 2.0)
     p_a_direct = a.inverse().apply(b.apply(p_b))
     p_a_via = ab.apply(p_b)
-    assert all(abs(x - y) < 1e-12 for x, y in zip(p_a_direct, p_a_via))
+    assert all(abs(x - y) < 1e-12 for x, y in zip(p_a_direct, p_a_via, strict=False))
     # a and b agree on the world point they both map to
     p_w = b.apply(p_b)
-    assert all(abs(x - y) < 1e-12 for x, y in zip(a.apply(p_a_direct), p_w))
+    assert all(
+        abs(x - y) < 1e-12 for x, y in zip(a.apply(p_a_direct), p_w, strict=False)
+    )
 
 
 def test_rigid_inverse_apply():
@@ -123,4 +127,4 @@ def test_rigid_inverse_apply():
     p_world = (1.0, -1.0, 2.5)
     p_cam = cam.inverse().apply(p_world)
     p_back = cam.apply(p_cam)
-    assert all(abs(a - b) < 1e-12 for a, b in zip(p_world, p_back))
+    assert all(abs(a - b) < 1e-12 for a, b in zip(p_world, p_back, strict=False))

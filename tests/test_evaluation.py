@@ -16,8 +16,8 @@ from egopersist.contracts import (
     MapUpdate,
 )
 from egopersist.evaluation import (
-    ActionEvent,
     EMPTY_CASE_POLICY,
+    ActionEvent,
     ErrorCategory,
     ParetoPoint,
     PositionReference,
@@ -207,7 +207,7 @@ def test_instant_update_case_vs_perfect() -> None:
     assert instant["persistent_change_micro"]["f1"] == pytest.approx(2.0 / 3.0)
     assert instant["error_taxonomy"]["counts"] == {
         "transient_false_commit": 1,
-        "unknown_false_removal": 1
+        "unknown_false_removal": 1,
     }
 
 

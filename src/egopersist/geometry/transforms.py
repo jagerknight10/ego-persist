@@ -114,11 +114,11 @@ class Rigid:
     def apply(self, p: Position3) -> Position3:
         return transform_point(self.t_m, self.q_wxyz, p)
 
-    def inverse(self) -> "Rigid":
+    def inverse(self) -> Rigid:
         t, q = inverse_transform(self.t_m, self.q_wxyz)
         return Rigid(t, q)
 
-    def compose(self, other: "Rigid") -> "Rigid":
+    def compose(self, other: Rigid) -> Rigid:
         """Map points in ``other``'s frame into self's frame.
 
         self and other must both be expressed in the same parent frame.
@@ -136,6 +136,6 @@ def rotation_angle_deg(a: QuaternionWXYZ, b: QuaternionWXYZ) -> float:
         return quat_normalize(q)
 
     qa, qb = _n(a), _n(b)
-    dot = abs(sum(x * y for x, y in zip(qa, qb)))
+    dot = abs(sum(x * y for x, y in zip(qa, qb, strict=False)))
     dot = min(1.0, dot)
     return 2.0 * math.degrees(math.acos(dot))

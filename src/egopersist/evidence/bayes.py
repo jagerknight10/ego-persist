@@ -13,9 +13,9 @@ from dataclasses import dataclass, field
 
 from egopersist.contracts import LabelClass
 from egopersist.evidence.features import (
+    _CHANGE_THRESHOLD_M,
     FEATURE_NAMES,
     INPUT_DIM,
-    _CHANGE_THRESHOLD_M,
 )
 
 _CLASS_ORDER: tuple[LabelClass, ...] = (
@@ -40,7 +40,6 @@ def feature_scores(
     if len(values) != INPUT_DIM:
         raise ValueError("expected one feature vector of length 20")
     disp = values[_F_IDX["displacement_m"]]
-    rot = values[_F_IDX["rotation_deg"]] * 45.0  # denormalise
     dev = values[_F_IDX["deviation_from_committed_m"]]
     dev_rot = values[_F_IDX["deviation_from_committed_rot_deg"]] * 45.0
     speed = values[_F_IDX["speed_mps"]]
@@ -83,9 +82,7 @@ class BayesAccumulator:
     """
 
     window: int = 5
-    _queue: list[tuple[float, float, float, float]] = field(
-        default_factory=list
-    )
+    _queue: list[tuple[float, float, float, float]] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         if self.window < 1:
@@ -100,12 +97,13 @@ class BayesAccumulator:
 
     def probabilities(self) -> dict[LabelClass, float]:
         """Softmax of the accumulated log-odds (finite, sums to 1)."""
-        sums = [
-            sum(scores[i] for scores in self._queue) for i in range(4)
-        ] if self._queue else [0.0, 0.0, 0.0, 0.0]
+        sums = (
+            [sum(scores[i] for scores in self._queue) for i in range(4)]
+            if self._queue
+            else [0.0, 0.0, 0.0, 0.0]
+        )
         m = max(sums)
         exps = [math.exp(s - m) for s in sums]
         total = sum(exps)
-        return {
-            label: value / total for label, value in zip(_CLASS_ORDER, exps)
-        }
+        pairs = zip(_CLASS_ORDER, exps, strict=False)
+        return {label: value / total for label, value in pairs}

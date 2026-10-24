@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Any
 
 from egopersist.contracts import EventLabel, LabelClass
-from egopersist.data.keyframes import keyframe_times
 
 
 def build_audit(

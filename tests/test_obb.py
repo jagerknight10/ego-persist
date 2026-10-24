@@ -7,8 +7,8 @@ import pytest
 from egopersist.geometry.obb import (
     OBB,
     centroid_distance_m,
-    iou_m3,
     intersection_volume_m3,
+    iou_m3,
 )
 
 H = (0.1, 0.1, 0.1)
@@ -66,11 +66,19 @@ def test_iou_symmetric_and_bounded():
     for _ in range(60):
         a = OBB(
             (random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)),
-            (random.uniform(0.02, 0.2), random.uniform(0.02, 0.2), random.uniform(0.02, 0.2)),
+            (
+                random.uniform(0.02, 0.2),
+                random.uniform(0.02, 0.2),
+                random.uniform(0.02, 0.2),
+            ),
         )
         b = OBB(
             (random.uniform(-1, 1), random.uniform(-1, 1), random.uniform(-1, 1)),
-            (random.uniform(0.02, 0.2), random.uniform(0.02, 0.2), random.uniform(0.02, 0.2)),
+            (
+                random.uniform(0.02, 0.2),
+                random.uniform(0.02, 0.2),
+                random.uniform(0.02, 0.2),
+            ),
         )
         assert abs(iou_m3(a, b) - iou_m3(b, a)) < 1e-9
         assert 0.0 <= iou_m3(a, b) <= 1.0 + 1e-12
