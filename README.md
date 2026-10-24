@@ -6,8 +6,9 @@ It decides whether a map discrepancy is transient, deferred, or a durable
 change. It does not train a new SLAM model. It sits above a frozen pose, depth,
 segmentation, and appearance stack.
 
-> Status: Phase 0. Training and reported results run on the university compute
-> cluster. This repository does not contain licensed data.
+> Status: v0.1.0. All modules merged and tested. Training and reported
+> results run on the university compute cluster (see docs/CLUSTER_RUNBOOK.md).
+> This repository does not contain licensed data.
 
 ## Core Decision
 
@@ -18,7 +19,18 @@ segmentation, and appearance stack.
 | `PERSISTENT_CHANGE` | New state passes the evidence gate | Commit |
 | `UNKNOWN` | Low visibility or likely occlusion | Defer |
 
+## Local Demo
+
+```bash
+PYTHONPATH=src python3.12 -m egopersist.cli.main query
+PYTHONPATH=src python3.12 -m egopersist.cli.main generate --output demo-out
+open demo-out/index.html
+```
+
+The demo is a scripted synthetic replay. It is not an ADT result.
+
 ## Local Checks
+
 
 ```bash
 PYTHONPATH=src python3.12 -m pytest
