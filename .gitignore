@@ -43,3 +43,7 @@ scratch/
 
 # Parallel agent worktrees
 .worktrees/
+data
+
+# local ADT test sample (symlink to main repo data dir)
+data
