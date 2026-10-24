@@ -78,6 +78,7 @@ def run_preprocess(argv: Sequence[str]) -> int:
 
         obs_lines: list[str] = []
         label_lines: list[str] = []
+        track_label_map: dict[str, list] = {}
         per_track_obs: dict[str, int] = {}
         n_visible = 0
         n_total = 0
@@ -98,9 +99,11 @@ def run_preprocess(argv: Sequence[str]) -> int:
                         dynamic=instance.motion_type == "dynamic",
                     )
                 )
-            events, _ = label_track(
+            events, per_keyframe = label_track(
                 sequence_id, track_id, samples, label_config
             )
+            assert len(per_keyframe) == len(track_obs)
+            track_label_map[track_id] = per_keyframe
             all_events.extend(events)
             for event in events:
                 label_lines.append(event.to_json())
@@ -109,6 +112,27 @@ def run_preprocess(argv: Sequence[str]) -> int:
 
         (sequence_dir / "observations.jsonl").write_text(
             "\n".join(obs_lines) + ("\n" if obs_lines else "")
+        )
+        (sequence_dir / "track_labels.jsonl").write_text(
+            "\n".join(
+                json.dumps(
+                    {"track_id": track_id, "labels": [lc.value for lc in labels]}
+                )
+                for track_id, labels in sorted(track_label_map.items())
+            )
+            + ("\n" if track_label_map else "")
+        )
+        meta_lines = [
+            json.dumps(
+                {
+                    "track_id": str(uid),
+                    "motion_type": sequence.instances[uid].motion_type,
+                }
+            )
+            for uid in sorted(observations)
+        ]
+        (sequence_dir / "track_meta.jsonl").write_text(
+            "\n".join(meta_lines) + ("\n" if meta_lines else "")
         )
         (sequence_dir / "event_labels.jsonl").write_text(
             "\n".join(label_lines) + ("\n" if label_lines else "")

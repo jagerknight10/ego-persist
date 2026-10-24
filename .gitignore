@@ -44,6 +44,6 @@ scratch/
 # Parallel agent worktrees
 .worktrees/
 
-# Local ADT data (directory and symlink); raw data never in git
-data/
-data
+# Local ADT data (root directory and symlink); raw data never in git
+/data/
+/data
