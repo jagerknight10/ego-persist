@@ -1,3 +1,4 @@
+#!/usr/bin/env bash
 # Cluster smoke test. Run on one compute node before submitting stage jobs.
 set -euo pipefail
 
