@@ -50,3 +50,5 @@ scratch/
 
 # Signed dataset link manifest: credential-like, never in Git (ADR 0002)
 Aria Digital Twin Dataset URLs.json
+
+docs/agents
