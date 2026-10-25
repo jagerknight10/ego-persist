@@ -14,7 +14,8 @@ mask_source: segmentation
 segmentation_asset: segmentation
 segmentation_stream_label: camera-rgb
 rgb_stream: 214-1
-depth_stream_label: camera-rgb
+depth_stream_label: 345-1
+segmentation_stream_label: 400-1
 pose_source: gt
 scene_split_policy: sequence_and_activity_instance
 min_valid_objects_per_sequence: 3

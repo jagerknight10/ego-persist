@@ -8,6 +8,11 @@ from typing import Any
 import numpy as np
 
 
+def is_numeric_stream_id(label: str) -> bool:
+    """Return whether a stream selector has the ``recordable-type-index`` form."""
+    return label.count("-") == 1 and all(part.isdigit() for part in label.split("-"))
+
+
 class AriaVrsReader:
     """Read image/depth frames from one Aria VRS file by device time."""
 
@@ -37,8 +42,14 @@ class AriaVrsReader:
     def image_at(self, label: str, timestamp_s: float) -> np.ndarray:
         """Return the image nearest before the causal timestamp."""
         from projectaria_tools.core.sensor_data import TimeDomain, TimeQueryOptions
+        from projectaria_tools.core.stream_id import StreamId
 
-        stream = self._provider.get_stream_id_from_label(label)
+        numeric_stream = is_numeric_stream_id(label)
+        stream = (
+            StreamId(label)
+            if numeric_stream
+            else self._provider.get_stream_id_from_label(label)
+        )
         if stream is None:
             raise KeyError(f"VRS stream label not found: {label}")
         image_data = self._provider.get_image_data_by_time_ns(
