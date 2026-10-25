@@ -35,7 +35,18 @@ def test_load_splits_roundtrip(tmp_path: Path) -> None:
     import json
 
     path = tmp_path / "splits.json"
-    path.write_text(json.dumps({"train": ["a", "b"], "val": ["c"], "test": ["d"]}))
+    path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "seed": 0,
+                "policy": "sequence_and_activity_instance",
+                "train": ["a", "b"],
+                "val": ["c"],
+                "test": ["d"],
+            }
+        )
+    )
     splits = load_splits(path)
     assert set(splits) == {"train", "val", "test"}
     assert splits["train"].sequence_ids == ("a", "b")

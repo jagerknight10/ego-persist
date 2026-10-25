@@ -25,10 +25,12 @@ class SplitSpec:
 SPLIT_ALIASES = {"validation": "val", "test": "test"}
 
 
-def normalize_split_raw(raw: dict[str, list[str]]) -> dict[str, list[str]]:
+def normalize_split_raw(raw: dict[str, object]) -> dict[str, list[str]]:
     """Apply split-name aliases and reject collisions."""
     out: dict[str, list[str]] = {}
     for name, items in raw.items():
+        if name not in {"train", "val", "validation", "test"}:
+            continue
         canonical = SPLIT_ALIASES.get(name, name)
         if canonical in out:
             raise ValueError(
