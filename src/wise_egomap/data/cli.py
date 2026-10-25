@@ -162,17 +162,22 @@ def run_preprocess(argv: Sequence[str]) -> int:
             per_track_obs[track_id] = len(track_obs)
             samples: list[TrackSample] = []
             for observation in track_obs:
-                n_visible += 1
                 n_total += 1
-                gt_position, gt_orientation = ground_truth_pose_at(
-                    sequence, object_uid, observation.timestamp_s
-                )
+                try:
+                    gt_position, gt_orientation = ground_truth_pose_at(
+                        sequence, object_uid, observation.timestamp_s
+                    )
+                except KeyError:
+                    gt_position = None
+                    gt_orientation = None
+                label_visible = gt_position is not None and gt_orientation is not None
+                n_visible += int(label_visible)
                 samples.append(
                     TrackSample(
                         timestamp_s=observation.timestamp_s,
                         pose=gt_position,
                         orientation_wxyz=gt_orientation,
-                        visible=True,
+                        visible=label_visible,
                         dynamic=instance.motion_type == "dynamic",
                     )
                 )

@@ -64,3 +64,13 @@ def test_ground_truth_pose_helper_is_causal() -> None:
         pytest.skip("selected object has no timed pose")
     position, _orientation = ground_truth_pose_at(sequence, object_uid, timed[-1])
     assert len(position) == 3
+
+
+def test_ground_truth_pose_helper_reports_missing_object() -> None:
+    sequence = (
+        load_adt_sequence(SEQ133) if (SEQ133 / "main_groundtruth").is_dir() else None
+    )
+    if sequence is None:
+        pytest.skip("seq133 sample not present")
+    with pytest.raises(KeyError, match="no ground-truth pose"):
+        ground_truth_pose_at(sequence, -1, 0.0)
