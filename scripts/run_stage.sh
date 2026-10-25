@@ -57,6 +57,12 @@ require_file "$stage_config" "Stage config"
 run_dir="$(make_run_directory "$WISE_EGOMAP_RUN_ROOT" "$WISE_EGOMAP_RUN_ID")"
 install -m 640 -- "$stage_config" "${run_dir}/resolved_config.yaml"
 
+if [[ "${WISE_EGOMAP_RUNTIME:-apptainer}" == "venv" ]]; then
+    # The site has no container runtime. The Slurm job activates the shared
+    # virtual environment before calling this script.
+    exec "$@"
+fi
+
 config_path="/runs/${WISE_EGOMAP_RUN_ID}/resolved_config.yaml"
 label_path="$(project_to_container "$WISE_EGOMAP_LABEL_CONFIG")"
 split_path="$(data_to_container "$WISE_EGOMAP_SPLIT_FILE")"

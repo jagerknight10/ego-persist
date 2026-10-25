@@ -9,7 +9,6 @@ for name in \
     WISE_EGOMAP_PROJECT_ROOT \
     WISE_EGOMAP_DATA_ROOT \
     WISE_EGOMAP_RUN_ROOT \
-    WISE_EGOMAP_IMAGE \
     WISE_EGOMAP_DATA_CONFIG \
     WISE_EGOMAP_LABEL_CONFIG \
     WISE_EGOMAP_EXPERIMENT_CONFIG \
@@ -17,12 +16,26 @@ for name in \
     WISE_EGOMAP_SPLIT_FILE; do
     require_env "$name"
 done
+runtime="${WISE_EGOMAP_RUNTIME:-apptainer}"
+case "$runtime" in
+    apptainer)
+        require_env WISE_EGOMAP_IMAGE
+        require_file "$WISE_EGOMAP_IMAGE" "WISE_EGOMAP_IMAGE"
+        require_command apptainer
+        ;;
+    venv)
+        require_env WISE_EGOMAP_VENV
+        require_directory "$WISE_EGOMAP_VENV" "WISE_EGOMAP_VENV"
+        ;;
+    *)
+        cluster_fail "WISE_EGOMAP_RUNTIME must be apptainer or venv."
+        ;;
+esac
 
 for name in \
     WISE_EGOMAP_PROJECT_ROOT \
     WISE_EGOMAP_DATA_ROOT \
     WISE_EGOMAP_RUN_ROOT \
-    WISE_EGOMAP_IMAGE \
     WISE_EGOMAP_DATA_CONFIG \
     WISE_EGOMAP_LABEL_CONFIG \
     WISE_EGOMAP_EXPERIMENT_CONFIG \
@@ -31,17 +44,18 @@ for name in \
     require_absolute_path "${!name}" "$name"
     require_clean_bind_path "${!name}" "$name"
 done
+if [[ "$runtime" == "apptainer" ]]; then
+    require_absolute_path "$WISE_EGOMAP_IMAGE" "WISE_EGOMAP_IMAGE"
+fi
 
 require_directory "$WISE_EGOMAP_PROJECT_ROOT" "WISE_EGOMAP_PROJECT_ROOT"
 require_directory "$WISE_EGOMAP_DATA_ROOT" "WISE_EGOMAP_DATA_ROOT"
 require_writable_directory "$WISE_EGOMAP_RUN_ROOT" "WISE_EGOMAP_RUN_ROOT"
-require_file "$WISE_EGOMAP_IMAGE" "WISE_EGOMAP_IMAGE"
 require_file "$WISE_EGOMAP_DATA_CONFIG" "WISE_EGOMAP_DATA_CONFIG"
 require_file "$WISE_EGOMAP_LABEL_CONFIG" "WISE_EGOMAP_LABEL_CONFIG"
 require_file "$WISE_EGOMAP_EXPERIMENT_CONFIG" "WISE_EGOMAP_EXPERIMENT_CONFIG"
 require_file "$WISE_EGOMAP_MODEL_CONFIG" "WISE_EGOMAP_MODEL_CONFIG"
 require_file "$WISE_EGOMAP_SPLIT_FILE" "WISE_EGOMAP_SPLIT_FILE"
-require_command apptainer
 
 for path in \
     "$WISE_EGOMAP_DATA_CONFIG" \

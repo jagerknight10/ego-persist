@@ -60,6 +60,12 @@ run_module_stage() {
     local stage="$1"
     local module="$2"
 
+    if [[ "${WISE_EGOMAP_RUNTIME:-apptainer}" == "venv" ]]; then
+        # The site has no container runtime. Use the Slurm-installed venv.
+        # shellcheck disable=SC1091
+        source "${WISE_EGOMAP_VENV}/bin/activate"
+    fi
+
     require_env "$module"
     local module_path="${!module}"
     if [[ ! "$module_path" =~ ^[A-Za-z_][A-Za-z0-9_.]*$ ]]; then
