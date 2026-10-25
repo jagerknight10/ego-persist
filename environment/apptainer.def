@@ -23,7 +23,7 @@ From: python:3.11.14-slim-bookworm
     cd /opt/wise-egomap
     uv_version="$(tr -d '[:space:]' < environment/uv-version.txt)"
     python -m pip install --no-cache-dir "uv==${uv_version}"
-    uv sync --frozen --extra train --extra demo --extra dev
+    uv sync --frozen --extra train --extra demo --extra aria --extra dev
     ./.venv/bin/python -c "import wise_egomap; import numpy; import yaml"
     umask 022
     chmod -R a+rX /opt/wise-egomap

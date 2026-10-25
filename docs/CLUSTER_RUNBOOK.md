@@ -49,8 +49,9 @@ bash scripts/check_cluster_env.sh
 
 ## 3. Download the data subset (compute node)
 
-Only two asset types are needed (poses, boxes, calibration). Video, depth,
-and synthetic assets are not used by the pipeline.
+The RGB-D pipeline needs `main_groundtruth`, calibration, trajectories, depth,
+and RGB/video. Large assets must stay on cluster storage. The downloader
+refuses files above 100 MB unless `--allow-large-files` is used.
 
 Smoke set (3 sequences, ~60 MB total):
 
@@ -65,7 +66,7 @@ srun --partition "$WISE_EGOMAP_SLURM_PARTITION" --cpus-per-task=4 --mem=16G --ti
       --manifest "$WISE_EGOMAP_DATA_ROOT/manifests/adt_urls.json" \
       --sequence "$seq" \
       --types main_groundtruth,mps_slam_calibration \
-      --out "$WISE_EGOMAP_DATA_ROOT/sequences"
+      --out "$WISE_EGOMAP_DATA_ROOT"
   done
 '
 ```
@@ -76,6 +77,9 @@ the environment sourced; the wrapper is idempotent, so an interrupted
 loop can be re-run:
 
 ```bash
+srun --partition "$WISE_EGOMAP_SLURM_PARTITION" --cpus-per-task=4 --mem=16G --time=12:00:00 bash -c '
+set -euo pipefail
+cd "$WISE_EGOMAP_PROJECT_ROOT"
 for seq in \
   Apartment_release_clean_seq131_M1292 \
   Apartment_release_clean_seq133_M1292 \
@@ -92,9 +96,11 @@ for seq in \
   python3 "$WISE_EGOMAP_PROJECT_ROOT/scripts/download_adt_json.py" \
     --manifest "$WISE_EGOMAP_DATA_ROOT/manifests/adt_urls.json" \
     --sequence "$seq" \
-    --types main_groundtruth,mps_slam_calibration \
-    --out "$WISE_EGOMAP_DATA_ROOT/sequences"
+    --types main_groundtruth,mps_slam_calibration,mps_slam_trajectories,depth,segmentation,video_main_rgb \
+    --out "$WISE_EGOMAP_DATA_ROOT" \
+    --allow-large-files
 done
+'
 ```
 
 Each asset is SHA-1 verified. The manifest lists all 236 sequences; the
@@ -105,7 +111,8 @@ Each asset is SHA-1 verified. The manifest lists all 236 sequences; the
 Smoke split (3 sequences):
 
 ```bash
-python3 scripts/create_split_manifest.py \
+srun --partition "$WISE_EGOMAP_SLURM_PARTITION" --cpus-per-task=2 --mem=4G --time=00:10:00 \
+  python3 scripts/create_split_manifest.py \
   --sequence Apartment_release_clean_seq131_M1292 \
   --sequence Apartment_release_clean_seq133_M1292 \
   --sequence Apartment_release_meal_seq131_M1292 \
@@ -127,6 +134,15 @@ srun --partition "$WISE_EGOMAP_SLURM_PARTITION" --cpus-per-task=4 --mem=16G --ti
 It must print `Cluster smoke passed.`.
 
 ## 6. Run the stages
+
+Submit the complete dependency chain with one command:
+
+```bash
+bash scripts/submit_pipeline.sh
+```
+
+This submits preprocessing, features, three training seeds, Bayesian
+evaluation, and model evaluation in dependency order.
 
 ```bash
 bash scripts/submit_stage.sh preprocess
@@ -166,7 +182,7 @@ rsync -av <HOST>:"$WISE_EGOMAP_RUN_ROOT/$WISE_EGOMAP_RUN_ID_eval_model/eval/" ./
 |---|---|
 | No GPU | `--gres`, partition, `CUDA_VISIBLE_DEVICES` |
 | CUDA error | Container vs host driver CUDA version |
-| Missing data | `WISE_EGOMAP_DATA_ROOT/sequences/<seq>/` layout |
+| Missing data | `WISE_EGOMAP_DATA_ROOT/<seq>/` layout |
 | Env error | `bash scripts/check_cluster_env.sh` |
 | Download blocked | HTTPS URL, manifest path, disk space |
 | OOM | Sequence count, batch size |

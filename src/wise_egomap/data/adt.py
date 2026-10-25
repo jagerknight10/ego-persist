@@ -17,6 +17,7 @@ metres. Poses map device coordinates to world coordinates.
 
 from __future__ import annotations
 
+import bisect
 import csv
 import json
 import math
@@ -147,6 +148,7 @@ class AdtSequence:
     calibrations: dict[str, CameraCalibration]
     start_s: float
     end_s: float
+    estimated_camera_poses: list[CameraPose] | None = None
 
     @property
     def duration_s(self) -> float:
@@ -183,6 +185,10 @@ def load_adt_sequence(path: Path) -> AdtSequence:
     object_poses = _load_object_poses(gt / "scene_objects.csv")
     boxes_2d = _load_boxes_2d(gt / "2d_bounding_box.csv")
     camera_poses = _load_camera_poses(gt / "aria_trajectory.csv")
+    estimated_path = root / "mps_slam_trajectories" / "closed_loop_trajectory.csv"
+    estimated_camera_poses = (
+        _load_camera_poses(estimated_path) if estimated_path.is_file() else None
+    )
     calibrations = _load_calibrations(calib)
 
     timestamps = [pose.timestamp_s for pose in object_poses if pose.timestamp_s >= 0.0]
@@ -200,7 +206,35 @@ def load_adt_sequence(path: Path) -> AdtSequence:
         calibrations=calibrations,
         start_s=min(timestamps),
         end_s=max(timestamps),
+        estimated_camera_poses=estimated_camera_poses,
     )
+
+
+def ground_truth_pose_at(
+    sequence: AdtSequence, object_uid: int, timestamp_s: float
+) -> tuple[tuple[float, float, float], tuple[float, float, float, float]]:
+    """Return an object pose for labels only, causally at ``timestamp_s``."""
+    timed = sorted(
+        (pose.timestamp_s, pose.t_world_m, pose.q_world_wxyz)
+        for pose in sequence.object_poses
+        if pose.object_uid == object_uid and pose.timestamp_s >= 0.0
+    )
+    if timed:
+        index = bisect.bisect_right([item[0] for item in timed], timestamp_s) - 1
+        if index >= 0:
+            _, position, orientation = timed[index]
+            return position, orientation
+    canonical = next(
+        (
+            (pose.t_world_m, pose.q_world_wxyz)
+            for pose in sequence.object_poses
+            if pose.object_uid == object_uid and pose.timestamp_s < 0.0
+        ),
+        None,
+    )
+    if canonical is None:
+        raise KeyError(f"no ground-truth pose for object {object_uid}")
+    return canonical
 
 
 def _load_instances(path: Path) -> dict[int, Instance]:
@@ -289,16 +323,22 @@ def _load_camera_poses(path: Path) -> list[CameraPose]:
             out.append(
                 CameraPose(
                     tracking_timestamp_s=_f(row["tracking_timestamp_us"]) / 1e6,
-                    t_device_m=(
-                        _f(row["tx_world_device"]),
-                        _f(row["ty_world_device"]),
-                        _f(row["tz_world_device"]),
+                    t_device_m=tuple(
+                        _f(row[key])
+                        for key in (
+                            "tx_world_device",
+                            "ty_world_device",
+                            "tz_world_device",
+                        )
                     ),
-                    q_device_wxyz=(
-                        _f(row["qw_world_device"]),
-                        _f(row["qx_world_device"]),
-                        _f(row["qy_world_device"]),
-                        _f(row["qz_world_device"]),
+                    q_device_wxyz=tuple(
+                        _f(row[key])
+                        for key in (
+                            "qw_world_device",
+                            "qx_world_device",
+                            "qy_world_device",
+                            "qz_world_device",
+                        )
                     ),
                     quality_score=_f(row["quality_score"]),
                 )

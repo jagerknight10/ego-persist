@@ -1,8 +1,16 @@
 """Read, audit, split, and label ADT input sequences."""
 
-from wise_egomap.data.adt import AdtSequence, load_adt_sequence
+from wise_egomap.data.adt import (
+    AdtSequence,
+    ground_truth_pose_at,
+    load_adt_sequence,
+)
 from wise_egomap.data.audit import build_audit, write_audit
-from wise_egomap.data.keyframes import build_observations, keyframe_times
+from wise_egomap.data.keyframes import (
+    build_observations,
+    build_rgbd_observations,
+    keyframe_times,
+)
 from wise_egomap.data.label_rules import (
     LabelConfig,
     TrackSample,
@@ -22,6 +30,8 @@ __all__ = [
     "TrackSample",
     "build_audit",
     "build_observations",
+    "build_rgbd_observations",
+    "ground_truth_pose_at",
     "keyframe_times",
     "label_track",
     "load_adt_sequence",

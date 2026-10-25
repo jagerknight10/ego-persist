@@ -115,7 +115,9 @@ def run_eval(argv: Sequence[str]) -> int:
     splits_raw = json.loads(split_path.read_text())
     splits_norm = normalize_split_raw(splits_raw)
     sequence_ids = sorted(
-        set(splits_norm.get("train", [])) | set(splits_norm.get("val", []))
+        set(splits_norm.get("train", []))
+        | set(splits_norm.get("val", []))
+        | set(splits_norm.get("test", []))
     )
     model_run_id = os.environ.get("WISE_EGOMAP_MODEL_RUN_ID", "")
 

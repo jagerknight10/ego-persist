@@ -20,11 +20,21 @@ from collections.abc import Sequence
 from pathlib import Path
 
 from wise_egomap.contracts import EventLabel
-from wise_egomap.data.adt import load_adt_sequence
+from wise_egomap.data.adt import ground_truth_pose_at, load_adt_sequence
 from wise_egomap.data.audit import build_audit
-from wise_egomap.data.keyframes import build_observations, keyframe_times
+from wise_egomap.data.keyframes import (
+    build_observations,
+    build_rgbd_observations,
+    keyframe_times,
+)
 from wise_egomap.data.label_rules import TrackSample, label_track, load_label_config
 from wise_egomap.data.splits import load_splits, validate_splits
+from wise_egomap.data.vrs import AriaVrsReader, find_vrs_file
+
+
+def _depth_at(reader: AriaVrsReader, label: str, timestamp_s: float):
+    """Read an ADT depth frame and convert millimetres to metres."""
+    return reader.image_at(label, timestamp_s).astype("float32") / 1000.0
 
 
 def _env(name: str) -> str:
@@ -68,7 +78,9 @@ def run_preprocess(argv: Sequence[str]) -> int:
         raise SystemExit("split manifest has no 'train' split")
     train_ids = set(train_spec.sequence_ids)
     val_ids = set(val_spec.sequence_ids)
-    missing = sorted((train_ids | val_ids) - set(available))
+    test_ids = set(splits.get("test", SplitSpec("test", ())).sequence_ids)
+    selected_ids = train_ids | val_ids | test_ids
+    missing = sorted(selected_ids - set(available))
     if missing:
         raise SystemExit(
             "split references sequences that are absent from the data root: "
@@ -79,9 +91,61 @@ def run_preprocess(argv: Sequence[str]) -> int:
     all_events: list[EventLabel] = []
     audit_rows: list[dict] = []
 
-    for sequence_id in sorted(set(available) & (train_ids | val_ids)):
+    geometry_mode = data_config.get("observation_geometry", "rgbd")
+    for sequence_id in sorted(set(available) & selected_ids):
         sequence = load_adt_sequence(data_root / sequence_id)
-        observations = build_observations(sequence, hz)
+        if geometry_mode == "rgbd":
+            depth_dir = data_root / sequence_id / data_config["depth_asset"]
+            depth_reader = AriaVrsReader(find_vrs_file(depth_dir))
+            depth_label = str(data_config.get("depth_stream_label", "camera-rgb"))
+            mask_provider = None
+            rgb_provider = None
+            if data_config.get("rgb_asset"):
+                rgb_dir = data_root / sequence_id / data_config["rgb_asset"]
+                rgb_reader = AriaVrsReader(find_vrs_file(rgb_dir))
+                rgb_label = str(data_config.get("rgb_stream_label", "camera-rgb"))
+
+                def rgb_provider(
+                    timestamp_s: float,
+                    reader=rgb_reader,
+                    label=rgb_label,
+                ):
+                    return reader.image_at(label, timestamp_s)
+
+            if data_config.get("mask_source") == "segmentation":
+                segmentation_dir = (
+                    data_root / sequence_id / data_config["segmentation_asset"]
+                )
+                segmentation_reader = AriaVrsReader(find_vrs_file(segmentation_dir))
+                segmentation_label = str(
+                    data_config.get("segmentation_stream_label", "camera-rgb")
+                )
+
+                def mask_provider(
+                    timestamp_s: float,
+                    object_uid: int,
+                    reader=segmentation_reader,
+                    label=segmentation_label,
+                ):
+                    return reader.image_at(label, timestamp_s) == object_uid
+
+            observations = build_rgbd_observations(
+                sequence,
+                hz,
+                lambda timestamp_s, reader=depth_reader, label=depth_label: _depth_at(
+                    reader, label, timestamp_s
+                ),
+                rgb_stream=str(data_config.get("rgb_stream", "214-1")),
+                pose_source=str(data_config.get("pose_source", "gt")),
+                mask_provider=mask_provider,
+                rgb_provider=rgb_provider,
+            )
+        elif geometry_mode == "legacy_gt":
+            if not data_config.get("allow_legacy_gt_geometry", False):
+                raise SystemExit("legacy_gt geometry is disabled by the data config")
+            observations = build_observations(sequence, hz)
+        else:
+            raise SystemExit(f"unsupported observation_geometry: {geometry_mode}")
         times = keyframe_times(sequence.start_s, sequence.end_s, hz)
         sequence_dir = run_dir / "preprocess" / sequence_id
         sequence_dir.mkdir(parents=True, exist_ok=True)
@@ -100,11 +164,14 @@ def run_preprocess(argv: Sequence[str]) -> int:
             for observation in track_obs:
                 n_visible += 1
                 n_total += 1
+                gt_position, gt_orientation = ground_truth_pose_at(
+                    sequence, object_uid, observation.timestamp_s
+                )
                 samples.append(
                     TrackSample(
                         timestamp_s=observation.timestamp_s,
-                        pose=observation.centroid_world_m,
-                        orientation_wxyz=observation.orientation_wxyz,
+                        pose=gt_position,
+                        orientation_wxyz=gt_orientation,
                         visible=True,
                         dynamic=instance.motion_type == "dynamic",
                     )
@@ -158,7 +225,16 @@ def run_preprocess(argv: Sequence[str]) -> int:
             observations_per_track=per_track_obs,
             events=[e for e in all_events if e.sequence_id == sequence_id],
             visible_fraction=(n_visible / n_total) if n_total else 0.0,
-            extra={"split": "train" if sequence_id in train_ids else "val"},
+            extra={
+                "split": (
+                    "train"
+                    if sequence_id in train_ids
+                    else "val"
+                    if sequence_id in val_ids
+                    else "test"
+                ),
+                "geometry_source": geometry_mode,
+            },
         )
         audit_rows.append(audit)
 

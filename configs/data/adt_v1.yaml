@@ -5,6 +5,17 @@ frame_stream: rgb
 use_gt_masks: true
 use_gt_depth: true
 use_gt_pose: true
+observation_geometry: rgbd
+allow_legacy_gt_geometry: false
+rgb_asset: video_main_rgb
+rgb_stream_label: camera-rgb
+depth_asset: depth
+mask_source: segmentation
+segmentation_asset: segmentation
+segmentation_stream_label: camera-rgb
+rgb_stream: 214-1
+depth_stream_label: camera-rgb
+pose_source: gt
 scene_split_policy: sequence_and_activity_instance
 min_valid_objects_per_sequence: 3
 fixture_path: tests/fixtures/adt_tiny

@@ -4,7 +4,10 @@ from __future__ import annotations
 
 import math
 
+import pytest
+
 from wise_egomap.contracts import Observation, TrackObservation
+from wise_egomap.evidence.cli import _require_rgbd_observations
 from wise_egomap.evidence.features import (
     FEATURE_NAMES,
     INPUT_DIM,
@@ -102,3 +105,14 @@ def test_visibility_windows_bounded() -> None:
         frac = values[FEATURE_NAMES.index("visible_fraction_16")]
         assert 0.0 <= frac <= 1.0
     assert values[FEATURE_NAMES.index("consecutive_visible")] <= 1.0
+
+
+def test_feature_stage_rejects_ground_truth_geometry() -> None:
+    with pytest.raises(SystemExit, match="requires RGB-D"):
+        _require_rgbd_observations({"7": [make_obs(0.5)]})
+
+
+def test_feature_stage_accepts_rgbd_geometry() -> None:
+    item = make_obs(0.5)
+    item = Observation.from_dict({**item.to_dict(), "geometry_source": "rgbd"})
+    _require_rgbd_observations({"7": [item]})

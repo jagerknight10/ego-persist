@@ -109,6 +109,8 @@ def run_download(
     asset_types: Sequence[str],
     out_root: Path,
     verify: bool = True,
+    max_file_size_mb: float = 100.0,
+    allow_large_files: bool = False,
 ) -> int:
     sequences = load_manifest(manifest_path)
     out_root.mkdir(parents=True, exist_ok=True)
@@ -123,6 +125,18 @@ def run_download(
                     f"asset type not in manifest for {sequence_id}: {asset_type}"
                 )
             entry = assets[asset_type]
+            declared_size = entry.get("file_size_bytes")
+            if (
+                isinstance(declared_size, (int, float))
+                and declared_size > max_file_size_mb * 1024 * 1024
+                and not allow_large_files
+            ):
+                raise SystemExit(
+                    f"refusing {asset_type} for {sequence_id}: "
+                    f"declared size {declared_size / 1048576:.2f} MB exceeds "
+                    f"the {max_file_size_mb:.2f} MB limit; "
+                    "use the cluster-only --allow-large-files option"
+                )
             seq_dir = out_root / sequence_id
             seq_dir.mkdir(parents=True, exist_ok=True)
             dest = seq_dir / asset_type
@@ -183,6 +197,17 @@ def parse_args(argv: Sequence[str]) -> argparse.Namespace:
     parser.add_argument(
         "--no-verify", action="store_true", help="Skip SHA-1 and size checks."
     )
+    parser.add_argument(
+        "--max-file-size-mb",
+        type=float,
+        default=100.0,
+        help="Refuse larger manifest files unless --allow-large-files is set.",
+    )
+    parser.add_argument(
+        "--allow-large-files",
+        action="store_true",
+        help="Allow files above the safety limit; use only on cluster storage.",
+    )
     return parser.parse_args(argv)
 
 
@@ -195,6 +220,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         asset_types,
         arguments.out,
         verify=not arguments.no_verify,
+        max_file_size_mb=arguments.max_file_size_mb,
+        allow_large_files=arguments.allow_large_files,
     )
     print(json.dumps({"downloaded": count, "sequences": len(arguments.sequence)}))
     return 0

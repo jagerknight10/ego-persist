@@ -1,6 +1,6 @@
 # WISE-EgoMap — Status and Action Plan
 
-Date: 2026-10-24. Branch: `main`. Owner: lead agent.
+Date: 2026-10-26. Branch: `main`. Owner: lead agent.
 
 ## 1. Task
 
@@ -86,17 +86,16 @@ thing that trains.
 | Module | State |
 |---|---|
 | contracts | done, frozen |
-| data | merged: ADT reader, 2 Hz keyframes, label rules, splits, audit |
-| geometry | merged: transforms, projection, OBB, association |
+| data | implemented: ADT reader, causal RGB-D VRS reader, 2 Hz keyframes, labels, splits, audit |
+| geometry | implemented: RGB-D back-projection, robust statistics, uncertainty, transforms, OBB, association |
 | evidence | merged: 20-d features, Bayes, EvidenceGRU, temperature calibration |
 | evaluation | merged: metrics, taxonomy, report, eval stage |
 | demo | merged: 3-scenario synthetic replay, HTML viewer, mug query CLI |
-| infra | merged: Slurm jobs, Apptainer, ADT JSON downloader, runbook |
+| infra | implemented: Slurm jobs, Apptainer with Project Aria Tools, size-guarded downloader, runbook |
 
-All modules are on `main` (`c1b9e30`). `ruff check` clean; 150 tests pass
-locally. The full pipeline (preprocess -> features -> train -> eval,
-bayes and model) was smoke-verified end to end on real ADT seq133
-(314 tracks, 47,828 observations).
+The local suite has 160 passing tests and one expected skip. Local checks do
+not claim an ADT experiment result. The full RGB-D pipeline still needs its
+first cluster run.
 
 Local test asset: seq133 ground truth + calibration in
 `data/raw/adt/seq133/` (~30 MB, checksum-verified).
@@ -106,7 +105,8 @@ Local test asset: seq133 ground truth + calibration in
 Gate G1 - data module [DONE]
 - ADT manifest + sequence reader (real CSV/JSONL formats).
 - 2 Hz deterministic keyframe sampling.
-- Observation builder from 2D boxes + trajectories + extents.
+- Causal RGB-D observation builder from current depth, RGB, masks, calibration,
+  and camera poses. Ground-truth object poses generate labels only.
 - Rule-label engine from `configs/labels_v1.yaml`.
 - Split validation, audit report, data card.
 - PASS: pytest green on seq133; audit JSON valid.
@@ -126,19 +126,19 @@ Gate G4 - merge evaluation, demo, infra [DONE]
   main. Live demo run: 3 scenarios + mug query.
 - PASS: `pytest` + `ruff` green on main; demo output correct.
 
-Gate G5 - cluster package [DONE locally, awaiting cluster run]
-- Download script (selected sequences + depth + segmentation + video).
-- Apptainer build, 4 Slurm stages, runbook with exact commands.
-- PASS: you run it, it works, results return here.
+Gate G5 - cluster package [IMPLEMENTED, awaiting cluster run]
+- Size-guarded downloader, Project Aria Tools dependency, Apptainer build,
+  Slurm stages, dependency-chain submitter, and runbook.
+- PASS condition: the owner runs the smoke test and returns the logs.
 
 After G5 you decide: full training run or stop at the demo.
 
 ## 6. Doing now
 
-1. Owner runs the cluster sequence from `docs/CLUSTER_RUNBOOK.md`
-   (clone v0.1.0, lock env, build container, download 12 sequences,
-   smoke, 4 stage submissions).
-2. Read the eval reports; decide: full training or stop at the demo.
+1. Owner runs the Slurm commands in `docs/CLUSTER_RUNBOOK.md`.
+2. Inspect the preprocess audit before training.
+3. Submit the dependency chain with `bash scripts/submit_pipeline.sh`.
+4. Return the Slurm logs if a cluster-specific issue occurs.
 
 ## 7. Risks and open questions
 

@@ -7,6 +7,7 @@ from pathlib import Path
 import pytest
 
 from wise_egomap.data import load_adt_sequence
+from wise_egomap.data.adt import ground_truth_pose_at
 
 SEQ133 = Path(__file__).resolve().parents[1] / "data" / "raw" / "adt" / "seq133"
 
@@ -23,6 +24,10 @@ def test_load_sequence_fields() -> None:
     assert seq.calibrations
     assert "camera-rgb" in seq.calibrations
     assert len(seq.camera_poses) > 100
+    assert seq.estimated_camera_poses is not None
+    assert len(seq.estimated_camera_poses) > 100
+    estimated_times = [pose.tracking_timestamp_s for pose in seq.estimated_camera_poses]
+    assert estimated_times == sorted(estimated_times)
     # camera poses are sorted in time
     times = [pose.tracking_timestamp_s for pose in seq.camera_poses]
     assert times == sorted(times)
@@ -42,3 +47,20 @@ def test_missing_file_rejected(tmp_path: Path) -> None:
     (partial / "main_groundtruth").mkdir(parents=True)
     with pytest.raises(FileNotFoundError):
         load_adt_sequence(partial)
+
+
+@pytest.mark.skipif(
+    not (SEQ133 / "main_groundtruth").is_dir(), reason="seq133 sample not present"
+)
+def test_ground_truth_pose_helper_is_causal() -> None:
+    sequence = load_adt_sequence(SEQ133)
+    object_uid = next(iter(sequence.instances))
+    timed = sorted(
+        pose.timestamp_s
+        for pose in sequence.object_poses
+        if pose.object_uid == object_uid and pose.timestamp_s >= 0.0
+    )
+    if not timed:
+        pytest.skip("selected object has no timed pose")
+    position, _orientation = ground_truth_pose_at(sequence, object_uid, timed[-1])
+    assert len(position) == 3

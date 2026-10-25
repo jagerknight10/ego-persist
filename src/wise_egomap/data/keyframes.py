@@ -10,11 +10,15 @@ from __future__ import annotations
 import bisect
 import math
 from collections import defaultdict
+from collections.abc import Callable
+from dataclasses import replace
+
+import numpy as np
 
 from wise_egomap.contracts import Observation
-from wise_egomap.data.adt import AdtSequence, CameraCalibration
+from wise_egomap.data.adt import AdtSequence, Box2D, CameraCalibration
 
-RGB_STREAM_CANDIDATES = ("1201-1", "1201-2")
+RGB_STREAM_CANDIDATES = ("214-1", "1201-1", "1201-2")
 
 
 def keyframe_times(start_s: float, end_s: float, hz: float) -> list[float]:
@@ -198,6 +202,128 @@ def build_observations(
         if observations:
             out[object_uid] = observations
     return out
+
+
+def build_rgbd_observations(
+    seq: AdtSequence,
+    hz: float,
+    depth_provider: Callable[[float], np.ndarray],
+    *,
+    rgb_stream: str = "214-1",
+    pose_source: str = "gt",
+    mask_provider: Callable[[float, int], np.ndarray] | None = None,
+    rgb_provider: Callable[[float], np.ndarray] | None = None,
+) -> dict[int, list[Observation]]:
+    """Build observations from current depth and box masks.
+
+    The boxes provide oracle masks for the controlled protocol. The object
+    pose table is never read by this function. ``pose_source`` selects camera
+    poses only: ``gt`` is controlled evaluation and ``mps`` is realistic
+    evaluation.
+    """
+    from wise_egomap.geometry.rgbd import (
+        cosine_similarity,
+        masked_color_signature,
+        observation_from_rgbd,
+    )
+    from wise_egomap.geometry.transforms import Rigid, quat_mul, quat_rotate
+
+    if pose_source not in {"gt", "mps"}:
+        raise ValueError("pose_source must be 'gt' or 'mps'")
+    camera_poses = (
+        seq.estimated_camera_poses if pose_source == "mps" else seq.camera_poses
+    )
+    if not camera_poses:
+        raise ValueError(f"no camera poses available for pose source {pose_source}")
+    calibration = seq.calibrations.get("camera-rgb")
+    if calibration is None:
+        raise ValueError("camera-rgb calibration is required")
+    times = keyframe_times(seq.start_s, seq.end_s, hz)
+    boxes_by_object: dict[int, list[Box2D]] = defaultdict(list)
+    for box in seq.boxes_2d:
+        if box.stream_id == rgb_stream:
+            boxes_by_object[box.object_uid].append(box)
+    for boxes in boxes_by_object.values():
+        boxes.sort(key=lambda item: item.timestamp_s)
+    pose_times = [pose.tracking_timestamp_s for pose in camera_poses]
+    output: dict[int, list[Observation]] = defaultdict(list)
+    previous: dict[int, Observation] = {}
+    previous_appearance: dict[int, np.ndarray] = {}
+    for timestamp_s in times:
+        pose_index = bisect.bisect_right(pose_times, timestamp_s) - 1
+        if pose_index < 0:
+            continue
+        device_pose = camera_poses[pose_index]
+        depth = np.asarray(depth_provider(timestamp_s))
+        if depth.ndim != 2:
+            raise ValueError("depth provider must return a two-dimensional array")
+        camera_pose = Rigid(device_pose.t_device_m, device_pose.q_device_wxyz)
+        camera_extrinsic = Rigid(calibration.t_device_m, calibration.q_device_wxyz)
+        camera_translation = tuple(
+            camera_pose.t_m[i]
+            + quat_rotate(camera_pose.q_wxyz, camera_extrinsic.t_m)[i]
+            for i in range(3)
+        )
+        camera_rotation = quat_mul(camera_pose.q_wxyz, camera_extrinsic.q_wxyz)
+        camera_to_world = Rigid(camera_translation, camera_rotation)
+        rgb = np.asarray(rgb_provider(timestamp_s)) if rgb_provider else None
+        for object_uid, boxes in boxes_by_object.items():
+            index = (
+                bisect.bisect_right([box.timestamp_s for box in boxes], timestamp_s) - 1
+            )
+            if index < 0:
+                continue
+            box = boxes[index]
+            if mask_provider is not None:
+                mask = np.asarray(mask_provider(timestamp_s, object_uid), dtype=bool)
+                if mask.shape != depth.shape:
+                    raise ValueError("mask provider shape does not match depth")
+            else:
+                mask = np.zeros(depth.shape, dtype=bool)
+                left = max(0, int(math.floor(box.x_min_px)))
+                right = min(depth.shape[1], int(math.ceil(box.x_max_px)))
+                top = max(0, int(math.floor(box.y_min_px)))
+                bottom = min(depth.shape[0], int(math.ceil(box.y_max_px)))
+                if left >= right or top >= bottom:
+                    continue
+                mask[top:bottom, left:right] = True
+            if not mask.any():
+                continue
+            appearance = 1.0
+            if rgb is not None:
+                signature = masked_color_signature(rgb, mask)
+                prior_signature = previous_appearance.get(object_uid)
+                if prior_signature is not None:
+                    appearance = cosine_similarity(signature, prior_signature)
+                previous_appearance[object_uid] = signature
+            try:
+                observation = observation_from_rgbd(
+                    sequence_id=seq.sequence_id,
+                    frame_id=f"kf{len(output[object_uid]):06d}",
+                    timestamp_s=round(timestamp_s, 6),
+                    instance_id=str(object_uid),
+                    depth_m=depth,
+                    mask=mask,
+                    camera_to_world=camera_to_world,
+                    pinhole=calibration.pinhole,
+                    co_visibility=1.0 if box.visibility_ratio >= 0.5 else 0.5,
+                    appearance_similarity=appearance,
+                    mask_area_px=box.area_px,
+                )
+            except ValueError:
+                continue
+            prior = previous.get(object_uid)
+            if prior is not None:
+                observation = replace(
+                    observation,
+                    displacement_m=round(
+                        math.dist(observation.centroid_world_m, prior.centroid_world_m),
+                        6,
+                    ),
+                )
+            output[object_uid].append(observation)
+            previous[object_uid] = observation
+    return dict(output)
 
 
 def rgb_camera_calibration(seq: AdtSequence) -> CameraCalibration:

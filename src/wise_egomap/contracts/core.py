@@ -215,6 +215,9 @@ class Observation(_Record):
     orientation_wxyz: QuaternionWXYZ = (1.0, 0.0, 0.0, 0.0)
     displacement_m: float = 0.0
     rotation_deg: float = 0.0
+    valid_depth_points: int = 0
+    position_covariance_m2: tuple[float, ...] = (0.0,) * 9
+    geometry_source: str = "legacy_gt"
 
     def __post_init__(self) -> None:
         for name in ("sequence_id", "frame_id", "instance_id"):
@@ -260,6 +263,23 @@ class Observation(_Record):
         object.__setattr__(
             self, "rotation_deg", _non_negative(self.rotation_deg, "rotation_deg")
         )
+        if (
+            not isinstance(self.valid_depth_points, int)
+            or isinstance(self.valid_depth_points, bool)
+            or self.valid_depth_points < 0
+        ):
+            raise ValueError("valid_depth_points must be a non-negative integer")
+        covariance = tuple(
+            _finite(item, f"position_covariance_m2[{index}]")
+            for index, item in enumerate(self.position_covariance_m2)
+        )
+        if len(covariance) != 9:
+            raise ValueError("position_covariance_m2 must contain nine values")
+        if any(item < 0.0 for item in (covariance[0], covariance[4], covariance[8])):
+            raise ValueError("position covariance diagonal must be non-negative")
+        object.__setattr__(self, "position_covariance_m2", covariance)
+        if self.geometry_source not in {"rgbd", "legacy_gt"}:
+            raise ValueError("geometry_source must be 'rgbd' or 'legacy_gt'")
 
 
 @dataclass(frozen=True, slots=True)

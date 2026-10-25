@@ -85,6 +85,21 @@ def _read_lines(path: Path) -> list[str]:
     return [line for line in path.read_text().splitlines() if line]
 
 
+def _require_rgbd_observations(observations: dict[str, list[Observation]]) -> None:
+    """Reject label-derived geometry before feature extraction."""
+    legacy = [
+        observation.geometry_source
+        for track in observations.values()
+        for observation in track
+        if observation.geometry_source != "rgbd"
+    ]
+    if legacy:
+        raise SystemExit(
+            "features stage requires RGB-D observations; "
+            "ground-truth object pose geometry is not a model input"
+        )
+
+
 def _iter_preprocessed(run_dir: Path, sequence_ids: list[str]):
     """Yield (sequence_id, observations, labels, meta) per sequence.
 
@@ -123,7 +138,9 @@ def run_features(argv: Sequence[str]) -> int:
     run_dir = run_root / run_id
     splits_path = Path(_env("WISE_EGOMAP_SPLIT_FILE"))
     sequence_ids = sorted(
-        set(_split_ids(splits_path, "train")) | set(_split_ids(splits_path, "val"))
+        set(_split_ids(splits_path, "train"))
+        | set(_split_ids(splits_path, "val"))
+        | set(_split_ids(splits_path, "test"))
     )
     out_dir = run_dir / "features"
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -133,6 +150,7 @@ def run_features(argv: Sequence[str]) -> int:
     for sequence_id, observations, labels, meta in _iter_preprocessed(
         run_dir, sequence_ids
     ):
+        _require_rgbd_observations(observations)
         seq_out = out_dir / sequence_id
         seq_out.mkdir(parents=True, exist_ok=True)
         feature_lines: list[str] = []
@@ -361,7 +379,7 @@ def run_train(argv: Sequence[str]) -> int:
         # seed run: model_probs/<sequence_id>/track_probabilities_model.jsonl.
         # The eval stage takes WISE_EGOMAP_MODEL_RUN_ID to select a seed.
         probs_root = run_dir / "model_probs"
-        for split_name in ("train", "val"):
+        for split_name in ("train", "val", "test"):
             for sequence_id in _split_ids(splits_path, split_name):
                 seq_dir = base_dir / "features" / sequence_id
                 lines: list[str] = []

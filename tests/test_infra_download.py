@@ -122,3 +122,12 @@ def test_download_skips_existing(tmp_path: Path) -> None:
         dl.run_download(manifest, ["seqX"], ("main_groundtruth",), tmp_path / "out")
         == 0
     )
+
+
+def test_download_refuses_large_manifest_file_by_default(tmp_path: Path) -> None:
+    manifest = make_manifest(tmp_path, size=101 * 1024 * 1024)
+    try:
+        dl.run_download(manifest, ["seqX"], ("main_groundtruth",), tmp_path / "out")
+        raise AssertionError("expected the 100 MB safety limit")
+    except SystemExit as exc:
+        assert "exceeds" in str(exc)
