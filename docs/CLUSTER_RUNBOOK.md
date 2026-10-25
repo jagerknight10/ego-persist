@@ -96,7 +96,7 @@ for seq in \
   python3 "$WISE_EGOMAP_PROJECT_ROOT/scripts/download_adt_json.py" \
     --manifest "$WISE_EGOMAP_DATA_ROOT/manifests/adt_urls.json" \
     --sequence "$seq" \
-    --types main_groundtruth,mps_slam_calibration,mps_slam_trajectories,depth,segmentation,video_main_rgb \
+    --types main_groundtruth,mps_slam_calibration,mps_slam_trajectories,depth,segmentation,main_vrs \
     --out "$WISE_EGOMAP_DATA_ROOT" \
     --allow-large-files
 done

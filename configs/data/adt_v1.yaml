@@ -7,7 +7,7 @@ use_gt_depth: true
 use_gt_pose: true
 observation_geometry: rgbd
 allow_legacy_gt_geometry: false
-rgb_asset: video_main_rgb
+rgb_asset: main_vrs
 rgb_stream_label: camera-rgb
 depth_asset: depth
 mask_source: segmentation

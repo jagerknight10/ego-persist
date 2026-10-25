@@ -95,12 +95,16 @@ def _cleanup_staging(staging: Path) -> None:
     staging.rmdir()
 
 
-def extract(zip_path: Path, dest: Path) -> None:
-    with zipfile.ZipFile(zip_path) as archive:
-        names = archive.namelist()
-        if any(name.startswith("/") or ".." in name for name in names):
-            raise SystemExit(f"unsafe zip path in {zip_path.name}")
-        archive.extractall(dest)
+def extract(asset_path: Path, dest: Path) -> bool:
+    """Extract an archive, or retain a raw media file as one asset."""
+    if zipfile.is_zipfile(asset_path):
+        with zipfile.ZipFile(asset_path) as archive:
+            names = archive.namelist()
+            if any(name.startswith("/") or ".." in name for name in names):
+                raise SystemExit(f"unsafe zip path in {asset_path.name}")
+            archive.extractall(dest)
+        return True
+    return False
 
 
 def run_download(
@@ -166,8 +170,9 @@ def run_download(
                             f"size mismatch for {zip_path.name}: "
                             f"expected {expected_size}, got {zip_path.stat().st_size}"
                         )
-                extract(zip_path, staging)
-                zip_path.unlink()
+                is_archive = extract(zip_path, staging)
+                if is_archive:
+                    zip_path.unlink()
                 dest.mkdir()
                 for child in sorted(staging.iterdir()):
                     child.rename(dest / child.name)

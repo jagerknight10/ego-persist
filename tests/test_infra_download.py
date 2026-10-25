@@ -131,3 +131,20 @@ def test_download_refuses_large_manifest_file_by_default(tmp_path: Path) -> None
         raise AssertionError("expected the 100 MB safety limit")
     except SystemExit as exc:
         assert "exceeds" in str(exc)
+
+
+def test_download_retains_raw_media_file(tmp_path: Path) -> None:
+    media = tmp_path / "main_recording.vrs"
+    media.write_bytes(b"vrs-bytes")
+    manifest = make_manifest(
+        tmp_path,
+        asset="main_vrs",
+        url="https://example.test/main_recording.vrs",
+        sha1=hashlib.sha1(media.read_bytes()).hexdigest(),
+        size=media.stat().st_size,
+    )
+    patch_download(tmp_path, media)
+    count = dl.run_download(manifest, ["seqX"], ("main_vrs",), tmp_path / "out")
+    assert count == 1
+    retained = tmp_path / "out" / "seqX" / "main_vrs" / "main_vrs.zip"
+    assert retained.read_bytes() == b"vrs-bytes"
