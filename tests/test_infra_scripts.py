@@ -133,6 +133,20 @@ def test_cpu_jobs_do_not_request_gpu() -> None:
         assert f"prepare_job {stage} 0" in template
 
 
+def test_cluster_environment_loader_sets_project_paths() -> None:
+    """The login-shell helper defines all shared cluster paths."""
+    project_root = Path(__file__).resolve().parents[1]
+    environment = {**os.environ, "HOME": "/tmp/wise-home"}
+    result = run_bash(
+        "source scripts/load_cluster_env.sh; "
+        'printf "%s|%s|%s" "$PROJECT_ROOT" "$DATA_ROOT" "$WISE_EGOMAP_RUNTIME"',
+        cwd=project_root,
+        env=environment,
+    )
+    assert result.returncode == 0
+    assert result.stdout == f"{project_root}|/tmp/wise-home/wise-egomap-data|venv"
+
+
 def test_smoke_script_fails_early_without_env() -> None:
     project_root = Path(__file__).resolve().parents[1]
     result = run_bash(
