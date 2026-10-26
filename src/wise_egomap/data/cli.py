@@ -157,6 +157,8 @@ def run_preprocess(argv: Sequence[str]) -> int:
         n_visible = 0
         n_total = 0
         for object_uid, track_obs in sorted(observations.items()):
+            if not track_obs:
+                continue
             instance = sequence.instances[object_uid]
             track_id = str(object_uid)
             per_track_obs[track_id] = len(track_obs)

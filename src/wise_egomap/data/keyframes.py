@@ -323,7 +323,7 @@ def build_rgbd_observations(
                 )
             output[object_uid].append(observation)
             previous[object_uid] = observation
-    return dict(output)
+    return {object_uid: track for object_uid, track in output.items() if track}
 
 
 def rgb_camera_calibration(seq: AdtSequence) -> CameraCalibration:

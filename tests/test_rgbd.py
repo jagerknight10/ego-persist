@@ -129,3 +129,46 @@ def test_rgbd_keyframes_do_not_read_object_pose_table() -> None:
         lambda _timestamp_s: np.ones((3, 3), dtype=np.float32),
     )
     assert observations[object_id][0].geometry_source == "rgbd"
+
+
+def test_rgbd_keyframes_drop_objects_without_valid_depth() -> None:
+    object_id = 7
+    sequence = AdtSequence(
+        sequence_id="seq",
+        dataset_name="ADT",
+        scene="Apartment",
+        instances={
+            object_id: Instance(
+                instance_id=object_id,
+                instance_name="mug",
+                prototype_name="mug",
+                category="cup",
+                motion_type="static",
+                rigidity="rigid",
+                up_vector=(0.0, 1.0, 0.0),
+                front_vector=(0.0, 0.0, 1.0),
+            )
+        },
+        extents={object_id: ObjectExtent(object_id, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0)},
+        object_poses=[],
+        boxes_2d=[Box2D("214-1", object_id, 0.0, 0.0, 2.0, 0.0, 2.0, 1.0)],
+        camera_poses=[CameraPose(0.0, (0.0, 0.0, 0.0), (1.0, 0.0, 0.0, 0.0), 1.0)],
+        calibrations={
+            "camera-rgb": CameraCalibration(
+                "camera-rgb",
+                "",
+                "pinhole",
+                (1.0, 1.0, 0.0, 0.0),
+                (0.0, 0.0, 0.0),
+                (1.0, 0.0, 0.0, 0.0),
+            )
+        },
+        start_s=0.0,
+        end_s=0.0,
+    )
+    observations = build_rgbd_observations(
+        sequence,
+        2.0,
+        lambda _timestamp_s: np.zeros((3, 3), dtype=np.float32),
+    )
+    assert object_id not in observations
