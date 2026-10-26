@@ -3,9 +3,8 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=8
-#SBATCH --mem=48G
-#SBATCH --time=12:00:00
-#SBATCH --gres=gpu:1
+#SBATCH --mem=16G
+#SBATCH --time=01:00:00
 
 set -euo pipefail
 
@@ -22,5 +21,5 @@ source "${WISE_EGOMAP_PROJECT_ROOT}/scripts/cluster_common.sh"
 # shellcheck source=jobs/job_common.sh
 source "${WISE_EGOMAP_PROJECT_ROOT}/jobs/job_common.sh"
 
-prepare_job eval 1
+prepare_job eval 0
 run_module_stage eval WISE_EGOMAP_EVAL_MODULE

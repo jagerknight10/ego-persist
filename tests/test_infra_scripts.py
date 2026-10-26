@@ -122,14 +122,15 @@ def test_slurm_templates_require_paths_early() -> None:
         assert "WISE_EGOMAP_PROJECT_ROOT" in result.stderr
 
 
-def test_feature_job_does_not_request_gpu() -> None:
-    """Feature extraction is deterministic CPU work."""
+def test_cpu_jobs_do_not_request_gpu() -> None:
+    """Feature extraction and evaluation are deterministic CPU work."""
     project_root = Path(__file__).resolve().parents[1]
-    template = (project_root / "jobs" / "features.sbatch").read_text(
-        encoding="utf-8"
-    )
-    assert "#SBATCH --gres=gpu" not in template
-    assert "prepare_job features 0" in template
+    for stage in ("features", "eval"):
+        template = (project_root / "jobs" / f"{stage}.sbatch").read_text(
+            encoding="utf-8"
+        )
+        assert "#SBATCH --gres=gpu" not in template
+        assert f"prepare_job {stage} 0" in template
 
 
 def test_smoke_script_fails_early_without_env() -> None:
