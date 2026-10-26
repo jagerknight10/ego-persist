@@ -1,5 +1,7 @@
 """Small tests for the real-ADT video overlay helpers."""
 
+from pathlib import Path
+
 from wise_egomap.data.adt import Box2D
 from wise_egomap.visualization.adt_video import (
     DecisionTrace,
@@ -7,6 +9,12 @@ from wise_egomap.visualization.adt_video import (
     boxes_near_time,
     nearest_decision,
 )
+
+
+def test_video_encoder_uses_even_dimensions() -> None:
+    """Web H.264 output requires even pixel dimensions for yuv420p."""
+    source = Path("scripts/render_adt_demo.py").read_text(encoding="utf-8")
+    assert "pad=ceil(iw/2)*2:ceil(ih/2)*2" in source
 
 
 def test_nearest_decision_respects_time_tolerance() -> None:

@@ -190,6 +190,5 @@ def render_frame(
         output_path,
         dpi=130,
         facecolor=figure.get_facecolor(),
-        bbox_inches="tight",
     )
     plt.close(figure)
